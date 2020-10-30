@@ -1,63 +1,53 @@
-//! Actix web juniper example
-//!
-//! A simple example integrating juniper in actix-web
-use std::io;
-use std::sync::Arc;
-
-use actix_cors::Cors;
-use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
-use juniper::http::graphiql::graphiql_source;
-use juniper::http::GraphQLRequest;
-
 mod schema;
+mod server;
+use argh::FromArgs;
+use std::net::{AddrParseError, SocketAddrV4};
+use tokio;
 
-use crate::schema::{create_schema, Schema};
-
-async fn graphiql() -> HttpResponse {
-    let html = graphiql_source("http://127.0.0.1:8080/graphql");
-    HttpResponse::Ok()
-        .content_type("text/html; charset=utf-8")
-        .body(html)
+fn main() {
+    match main_result() {
+        Ok(()) => std::process::exit(0),
+        Err(e) => {
+            println!("Error:");
+            println!("{:#?}", e);
+            std::process::exit(2)
+        }
+    }
 }
 
-async fn graphql(
-    st: web::Data<Arc<Schema>>,
-    data: web::Json<GraphQLRequest>,
-) -> Result<HttpResponse, Error> {
-    let user = web::block(move || {
-        let res = data.execute(&st, &());
-        Ok::<_, serde_json::error::Error>(serde_json::to_string(&res)?)
-    })
-    .await?;
-    Ok(HttpResponse::Ok()
-        .content_type("application/json")
-        .body(user))
+fn main_result() -> Result<(), MainError> {
+    let args: Args = argh::from_env();
+    let ip = args
+        .ip
+        .map(|ip| ip.parse())
+        .unwrap_or(Ok(std::net::Ipv4Addr::LOCALHOST))
+        .map_err(MainError::AddrParseError)?;
+    let port = args.port.unwrap_or(3000);
+    let socket = SocketAddrV4::new(ip, port);
+
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    rt.block_on(server::run(socket.into()))
+        .map_err(MainError::ServerError)?;
+
+    Ok(())
 }
 
-#[actix_web::main]
-async fn main() -> io::Result<()> {
-    std::env::set_var("RUST_LOG", "actix_web=info");
-    env_logger::init();
+#[derive(FromArgs)]
+/// Start server
+struct Args {
+    /// the port of the http server
+    #[argh(option)]
+    port: Option<u16>,
 
-    // Create Juniper schema
-    let schema = std::sync::Arc::new(create_schema());
+    /// the ip address of the http server
+    #[argh(option)]
+    ip: Option<String>,
+}
 
-    // Start http server
-    HttpServer::new(move || {
-        App::new()
-            .data(schema.clone())
-            .wrap(middleware::Logger::default())
-            .wrap(
-                Cors::new()
-                    .allowed_methods(vec!["POST", "GET"])
-                    .supports_credentials()
-                    .max_age(3600)
-                    .finish(),
-            )
-            .service(web::resource("/graphql").route(web::post().to(graphql)))
-            .service(web::resource("/graphiql").route(web::get().to(graphiql)))
-    })
-    .bind("127.0.0.1:8080")?
-    .run()
-    .await
+#[derive(Debug)]
+enum MainError {
+    AddrParseError(AddrParseError),
+    ServerError(std::io::Error),
 }
