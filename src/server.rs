@@ -1,23 +1,47 @@
+use crate::schema;
+
+use juniper::{EmptyMutation, FieldResult, Variables};
 use tide::prelude::*;
 use tide::Request;
-
 #[derive(Debug, Deserialize)]
 struct Animal {
     name: String,
     legs: u8,
 }
 
+#[derive(Clone)]
+struct State {}
+
 pub async fn run(socket: std::net::SocketAddr) -> tide::Result<()> {
-    let mut app = tide::new();
-    app.at("/orders/shoes").post(order_shoes);
+    let state = State {};
+    let mut app = tide::with_state(state);
+    app.at("/graphql").get(handle_graphiql);
+    app.at("/graphql").post(handle_graphql);
     app.listen(socket).await?;
     Ok(())
 }
 
-pub async fn order_shoes(mut req: Request<()>) -> tide::Result {
-    let Animal { name, legs } = req.body_json().await?;
-    Ok(format!("Hello, {}! I've put in an order for {} shoes", name, legs).into())
+async fn handle_graphiql(_: Request<State>) -> tide::Result<impl Into<tide::Response>> {
+    Ok(tide::Response::builder(200)
+        .body(juniper::graphiql::graphiql_source("/graphql"))
+        .content_type(tide::http::mime::HTML))
 }
+
+async fn handle_graphql(mut request: Request<State>) -> tide::Result {
+    let query = request.body_string().await?;
+    let schema = schema::create_schema();
+    let result = juniper::execute(&query, None, &schema, &Variables::new(), &());
+
+    return match result {
+        Ok((value, _errors)) => Ok(tide::Response::builder(tide::http::StatusCode::Ok)
+            .body(tide::Body::from_json(&value)?)
+            .build()),
+        Err(e) => Ok(tide::Response::builder(tide::http::StatusCode::Ok)
+            .body(tide::Body::from_json(&e)?)
+            .build()),
+    };
+}
+
 /*
 async fn graphiql() -> HttpResponse {
     let html = graphiql_source("http://127.0.0.1:8080/graphql");

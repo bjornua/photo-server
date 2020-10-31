@@ -1,7 +1,7 @@
 mod schema;
 mod server;
 use argh::FromArgs;
-use std::net::{AddrParseError, SocketAddrV4};
+use std::net::{AddrParseError, SocketAddr, SocketAddrV4};
 use tokio;
 
 const DEFAULT_SOCKET: std::net::Ipv4Addr = std::net::Ipv4Addr::LOCALHOST;
@@ -22,15 +22,17 @@ fn main_result() -> Result<(), MainError> {
     let ip = args
         .ip
         .map(|ip| ip.parse())
-        .unwrap_or(Ok())
+        .unwrap_or(Ok(DEFAULT_SOCKET))
         .map_err(MainError::AddrParseError)?;
     let port = args.port.unwrap_or(3000);
-    let socket = SocketAddrV4::new(ip, port);
+    let socket = SocketAddr::V4(SocketAddrV4::new(ip, port));
 
+    println!("Starting server: http://{}/", socket);
     let rt = tokio::runtime::Builder::new_current_thread()
         .build()
         .unwrap();
-    rt.block_on(server::run(socket.into()))
+
+    rt.block_on(server::run(socket))
         .map_err(MainError::ServerError)?;
 
     Ok(())
