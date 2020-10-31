@@ -1,11 +1,23 @@
-use std::io;
-use std::sync::Arc;
+use tide::prelude::*;
+use tide::Request;
 
-use actix_cors::Cors;
-use juniper::http::graphiql::graphiql_source;
-use juniper::http::GraphQLRequest;
+#[derive(Debug, Deserialize)]
+struct Animal {
+    name: String,
+    legs: u8,
+}
 
-use crate::schema::{create_schema, Schema};
+pub async fn run(socket: std::net::SocketAddr) -> tide::Result<()> {
+    let mut app = tide::new();
+    app.at("/orders/shoes").post(order_shoes);
+    app.listen(socket).await?;
+    Ok(())
+}
+
+pub async fn order_shoes(mut req: Request<()>) -> tide::Result {
+    let Animal { name, legs } = req.body_json().await?;
+    Ok(format!("Hello, {}! I've put in an order for {} shoes", name, legs).into())
+}
 /*
 async fn graphiql() -> HttpResponse {
     let html = graphiql_source("http://127.0.0.1:8080/graphql");

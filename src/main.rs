@@ -4,6 +4,8 @@ use argh::FromArgs;
 use std::net::{AddrParseError, SocketAddrV4};
 use tokio;
 
+const DEFAULT_SOCKET: std::net::Ipv4Addr = std::net::Ipv4Addr::LOCALHOST;
+
 fn main() {
     match main_result() {
         Ok(()) => std::process::exit(0),
@@ -20,7 +22,7 @@ fn main_result() -> Result<(), MainError> {
     let ip = args
         .ip
         .map(|ip| ip.parse())
-        .unwrap_or(Ok(std::net::Ipv4Addr::LOCALHOST))
+        .unwrap_or(Ok())
         .map_err(MainError::AddrParseError)?;
     let port = args.port.unwrap_or(3000);
     let socket = SocketAddrV4::new(ip, port);
@@ -49,5 +51,5 @@ struct Args {
 #[derive(Debug)]
 enum MainError {
     AddrParseError(AddrParseError),
-    ServerError(std::io::Error),
+    ServerError(tide::Error),
 }
