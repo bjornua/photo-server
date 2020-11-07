@@ -1,5 +1,8 @@
+mod lib;
 mod schema;
 mod server;
+mod timeline;
+
 use argh::FromArgs;
 use std::net::{AddrParseError, SocketAddr, SocketAddrV4};
 use tokio;
