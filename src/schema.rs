@@ -10,6 +10,7 @@ enum Episode {
 }
 
 use juniper::{GraphQLEnum, GraphQLObject};
+use timeline::get_pictures;
 
 #[derive(GraphQLObject)]
 #[graphql(description = "A humanoid creature in the Star Wars universe")]
@@ -21,10 +22,14 @@ pub struct QueryRoot;
 
 #[juniper::object]
 impl QueryRoot {
-    fn phtotos(id: String) -> FieldResult<Human> {
-        Ok(Photo {
-            id: "1234".to_owned(),
-        })
+    fn photos(id: String) -> FieldResult<Vec<Photo>> {
+        let paths_native = get_pictures();
+
+        Ok(timeline::get_pictures()
+            .into_iter()
+            .filter_map(|p| p.to_str().map(|p| p.to_string()))
+            .map(|p| Photo { id: p })
+            .collect())
     }
 }
 
