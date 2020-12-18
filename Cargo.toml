@@ -12,14 +12,17 @@ lto = true
 panic="abort"
 codegen-units = 1
 
+[dependencies.chrono]
+version = "0.4.19"
+default-features = false
+
 [dependencies.serde]
-version = "1.0.117"
+version = "1.0.118"
 default-features = false
 
 [dependencies.serde_json]
-version = "1.0.59"
+version = "1.0.60"
 default-features = false
-
 
 [dependencies.serde_derive]
 version = "1.0.117"
@@ -27,16 +30,16 @@ default-features = false
 
 [dependencies.juniper]
 version = "0.14.2"
+features = ['chrono']
 default-features = false
-
 
 [dependencies.argh]
 version = "0.1.4"
 default-features = false
 
-
 [dependencies.tokio]
 version = "0.3.2"
+default-features = false
 features = ['rt']
 
 [dependencies.tide]

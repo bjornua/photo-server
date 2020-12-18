@@ -13,9 +13,13 @@ use juniper::{GraphQLEnum, GraphQLObject};
 use timeline::get_pictures;
 
 #[derive(GraphQLObject)]
-#[graphql(description = "A humanoid creature in the Star Wars universe")]
 struct Photo {
     id: String,
+    hash: String,
+    width: f64,
+    height: f64,
+    date: chrono::DateTime<chrono::Utc>,
+    size: f64,
 }
 
 pub struct QueryRoot;
@@ -28,7 +32,14 @@ impl QueryRoot {
         Ok(timeline::get_pictures()
             .into_iter()
             .filter_map(|p| p.to_str().map(|p| p.to_string()))
-            .map(|p| Photo { id: p })
+            .map(|p| Photo {
+                id: p,
+                hash: String::from("Test Hash"),
+                width: 123.0,
+                height: 123.0,
+                date: chrono::MIN_DATETIME,
+                size: 123.0,
+            })
             .collect())
     }
 }
