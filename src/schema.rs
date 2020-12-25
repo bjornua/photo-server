@@ -2,14 +2,7 @@ use crate::timeline;
 use juniper::FieldResult;
 use juniper::RootNode;
 
-#[derive(GraphQLEnum)]
-enum Episode {
-    NewHope,
-    Empire,
-    Jedi,
-}
-
-use juniper::{GraphQLEnum, GraphQLObject};
+use juniper::GraphQLObject;
 use timeline::get_pictures;
 
 #[derive(GraphQLObject)]
@@ -20,6 +13,7 @@ struct Photo {
     height: f64,
     date: chrono::DateTime<chrono::Utc>,
     size: f64,
+    added: chrono::DateTime<chrono::Utc>,
 }
 
 pub struct QueryRoot;
@@ -39,6 +33,7 @@ impl QueryRoot {
                 height: 123.0,
                 date: chrono::MIN_DATETIME,
                 size: 123.0,
+                added: chrono::MIN_DATETIME,
             })
             .collect())
     }
