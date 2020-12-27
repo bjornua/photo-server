@@ -4,12 +4,6 @@ use std::collections::HashMap;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
-fn main() {
-    let rand_string: String = thread_rng().sample_iter(&Alphanumeric).take(30).collect();
-
-    println!("{}", rand_string);
-}
-
 #[derive(Clone, Debug)]
 pub struct Session {
     pub id: String,
@@ -18,8 +12,12 @@ pub struct Session {
 
 impl Session {
     pub fn new() -> Self {
+        let rand_string: String = thread_rng().sample_iter(&Alphanumeric).take(30).collect();
+
+        println!("{}", rand_string);
+
         Self {
-            id: String::new(),
+            id: rand_string,
             user: None,
         }
     }
