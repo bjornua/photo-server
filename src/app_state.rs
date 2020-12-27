@@ -1,23 +1,50 @@
 use crate::schema;
 use std::collections::HashMap;
 
-use rand::distributions::Alphanumeric;
+use bs58;
 use rand::{thread_rng, Rng};
+
+enum TokenDecodeError {
+    BS58DecodeError(bs58::decode::Error),
+    WrongLength,
+}
+
+#[derive(Clone, Debug)]
+pub struct Token([u8; 32]);
+
+impl Token {
+    fn new() -> Token {
+        Token(thread_rng().gen())
+    }
+
+    fn decode(s: String) -> Result<Token, TokenDecodeError> {
+        let mut buffer: [u8; 32] = [0; 32];
+        let size = bs58::decode(s)
+            .into(&mut buffer)
+            .map_err(TokenDecodeError::BS58DecodeError)?;
+
+        if size != 32 {
+            return Err(TokenDecodeError::WrongLength);
+        }
+
+        return Ok(Token(buffer));
+    }
+
+    fn encode(&self) -> String {
+        bs58::encode(&self.0).into_string()
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct Session {
-    pub id: String,
+    pub token: Token,
     pub user: Option<User>,
 }
 
 impl Session {
     pub fn new() -> Self {
-        let rand_string: String = thread_rng().sample_iter(&Alphanumeric).take(30).collect();
-
-        println!("{}", rand_string);
-
         Self {
-            id: rand_string,
+            token: Token::new(),
             user: None,
         }
     }
