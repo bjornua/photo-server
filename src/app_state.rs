@@ -1,15 +1,51 @@
 use crate::schema;
+use std::collections::HashMap;
 
-#[derive(Clone)]
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+
+fn main() {
+    let rand_string: String = thread_rng().sample_iter(&Alphanumeric).take(30).collect();
+
+    println!("{}", rand_string);
+}
+
+#[derive(Clone, Debug)]
+pub struct Session {
+    pub id: String,
+    pub user: Option<User>,
+}
+
+impl Session {
+    pub fn new() -> Self {
+        Self {
+            id: String::new(),
+            user: None,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct User {
+    pub id: String,
+    pub name: String,
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Clone, Debug)]
 pub struct State {
     pub schema: std::sync::Arc<schema::Schema>,
+    pub users: HashMap<String, User>,
+    pub sessions: HashMap<String, Session>,
 }
 
 impl State {
     pub fn new() -> Self {
-        let state = State {
+        Self {
             schema: std::sync::Arc::new(schema::create_schema()),
-        };
-        return state;
+            users: HashMap::new(),
+            sessions: HashMap::new(),
+        }
     }
 }

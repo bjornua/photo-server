@@ -16,6 +16,7 @@ struct Photo {
     added: chrono::DateTime<chrono::Utc>,
 }
 
+#[derive(Debug)]
 pub struct QueryRoot;
 
 #[juniper::object]
@@ -39,6 +40,7 @@ impl QueryRoot {
     }
 }
 
+#[derive(Debug)]
 pub struct MutationRoot;
 
 #[juniper::object]
