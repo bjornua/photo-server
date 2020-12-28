@@ -1,9 +1,11 @@
-use crate::timeline;
+use crate::{app_state::LockedAppState, timeline};
 use juniper::FieldResult;
 use juniper::RootNode;
 
 use juniper::GraphQLObject;
 use timeline::get_pictures;
+
+impl juniper::Context for LockedAppState {}
 
 #[derive(GraphQLObject)]
 struct Photo {
@@ -16,8 +18,19 @@ struct Photo {
     added: chrono::DateTime<chrono::Utc>,
 }
 
+#[derive(GraphQLObject)]
+struct Session {
+    id: String,
+    user: Option<User>,
+}
+
+#[derive(GraphQLObject)]
+struct User {
+    id: String,
+}
+
 #[derive(Debug)]
-pub struct QueryRoot;
+pub struct QueryRoot(pub LockedAppState);
 
 #[juniper::object]
 impl QueryRoot {
@@ -41,13 +54,23 @@ impl QueryRoot {
 }
 
 #[derive(Debug)]
-pub struct MutationRoot;
+pub struct MutationRoot(pub LockedAppState);
 
 #[juniper::object]
-impl MutationRoot {}
+impl MutationRoot {
+    fn new_session(&self) -> FieldResult<Session> {
+        let mut app_state = self.0 .0.write().unwrap();
+        let session = crate::app_state::Session::new();
+        let session = app_state
+            .sessions
+            .entry(session.token.clone())
+            .or_insert(session);
 
-pub type Schema = RootNode<'static, QueryRoot, MutationRoot>;
-
-pub fn create_schema() -> Schema {
-    Schema::new(QueryRoot {}, MutationRoot {})
+        return Ok(Session {
+            id: session.token.encode(),
+            user: session.user.as_ref().map(|u| User { id: u.id.clone() }),
+        });
+    }
 }
+
+pub type Schema<'a> = RootNode<'a, QueryRoot, MutationRoot>;
