@@ -1,4 +1,7 @@
-use crate::{app_state::LockedAppState, timeline};
+use crate::{
+    app_state::{self, LockedAppState},
+    timeline,
+};
 use juniper::FieldResult;
 use juniper::RootNode;
 
@@ -24,9 +27,24 @@ struct Session {
     user: Option<User>,
 }
 
+impl From<&app_state::Session> for Session {
+    fn from(s: &app_state::Session) -> Self {
+        return Self {
+            id: s.token.encode(),
+            user: s.user.as_ref().map(|u| u.into()),
+        };
+    }
+}
+
 #[derive(GraphQLObject)]
 struct User {
     id: String,
+}
+
+impl From<&app_state::User> for User {
+    fn from(u: &app_state::User) -> Self {
+        return Self { id: u.id.clone() };
+    }
 }
 
 #[derive(Debug)]
@@ -34,7 +52,7 @@ pub struct QueryRoot(pub LockedAppState);
 
 #[juniper::object]
 impl QueryRoot {
-    fn photos(id: String) -> FieldResult<Vec<Photo>> {
+    fn photos() -> FieldResult<Vec<Photo>> {
         let paths_native = get_pictures();
 
         Ok(timeline::get_pictures()
@@ -51,6 +69,17 @@ impl QueryRoot {
             })
             .collect())
     }
+
+    fn sessions(&self) -> Vec<Session> {
+        let app_state = self.0 .0.read().unwrap();
+        let test = app_state
+            .sessions
+            .values()
+            .map(|session| session.into())
+            .collect();
+
+        test
+    }
 }
 
 #[derive(Debug)]
@@ -58,18 +87,14 @@ pub struct MutationRoot(pub LockedAppState);
 
 #[juniper::object]
 impl MutationRoot {
-    fn new_session(&self) -> FieldResult<Session> {
+    fn new_session(&self) -> Session {
         let mut app_state = self.0 .0.write().unwrap();
         let session = crate::app_state::Session::new();
         let session = app_state
             .sessions
             .entry(session.token.clone())
             .or_insert(session);
-
-        return Ok(Session {
-            id: session.token.encode(),
-            user: session.user.as_ref().map(|u| User { id: u.id.clone() }),
-        });
+        return (&*session).into();
     }
 }
 
