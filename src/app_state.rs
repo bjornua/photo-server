@@ -1,17 +1,17 @@
-use crate::lib::token;
+use crate::lib::id::ID;
 
 use std::{collections::HashMap, sync::RwLock};
 
 #[derive(Clone, Debug)]
 pub struct Session {
-    pub token: token::Token,
+    pub token: ID,
     pub user: Option<User>,
 }
 
 impl Session {
     pub fn new() -> Self {
         Self {
-            token: token::Token::new(),
+            token: ID::new(),
             user: None,
         }
     }
@@ -19,7 +19,7 @@ impl Session {
 
 #[derive(Clone, Debug)]
 pub struct User {
-    pub id: String,
+    pub id: ID,
     pub name: String,
     pub username: String,
     pub password: String,
@@ -36,15 +36,27 @@ impl LockedAppState {
 
 #[derive(Clone, Debug)]
 pub struct AppState {
-    pub users: HashMap<String, User>,
-    pub sessions: HashMap<token::Token, Session>,
+    pub users: HashMap<ID, User>,
+    pub sessions: HashMap<ID, Session>,
 }
 
 impl AppState {
     pub fn new() -> Self {
-        Self {
-            users: HashMap::new(),
+        let mut users = HashMap::new();
+        let admin = User {
+            id: ID::new(),
+            name: "Admin User".into(),
+            password: "admin".into(),
+            username: "admin".into(),
+        };
+        users.insert(admin.id.clone(), admin);
+
+        let app_state = Self {
+            users,
             sessions: HashMap::new(),
-        }
+        };
+        println!("{:?}", app_state);
+
+        return app_state;
     }
 }

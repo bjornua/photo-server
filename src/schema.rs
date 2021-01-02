@@ -30,7 +30,7 @@ struct Session {
 impl From<&app_state::Session> for Session {
     fn from(s: &app_state::Session) -> Self {
         return Self {
-            id: s.token.encode(),
+            id: s.token.to_string(),
             user: s.user.as_ref().map(|u| u.into()),
         };
     }
@@ -43,7 +43,9 @@ struct User {
 
 impl From<&app_state::User> for User {
     fn from(u: &app_state::User) -> Self {
-        return Self { id: u.id.clone() };
+        return Self {
+            id: u.id.to_string(),
+        };
     }
 }
 
