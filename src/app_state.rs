@@ -45,18 +45,15 @@ impl AppState {
         let mut users = HashMap::new();
         let admin = User {
             id: ID::new(),
-            name: "Admin User".into(),
-            password: "admin".into(),
-            username: "admin".into(),
+            name: String::from("Admin User"),
+            password: String::from("admin"),
+            username: String::from("admin"),
         };
         users.insert(admin.id.clone(), admin);
 
-        let app_state = Self {
+        return Self {
             users,
             sessions: HashMap::new(),
         };
-        println!("{:?}", app_state);
-
-        return app_state;
     }
 }
