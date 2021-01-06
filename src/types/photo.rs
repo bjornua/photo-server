@@ -1,6 +1,3 @@
-use juniper::GraphQLObject;
-
-#[derive(GraphQLObject)]
 pub struct Photo {
     pub id: String,
     pub hash: String,

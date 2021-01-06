@@ -1,7 +1,7 @@
 use crate::app_state;
-use juniper::GraphQLObject;
+use serde::{Deserialize, Serialize};
 
-#[derive(GraphQLObject)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct User {
     pub id: String,
 }

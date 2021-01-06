@@ -32,11 +32,6 @@ default-features = false
 version = "1.0.117"
 default-features = false
 
-[dependencies.juniper]
-version = "0.14.2"
-features = ['chrono']
-default-features = false
-
 [dependencies.argh]
 version = "0.1.4"
 default-features = false

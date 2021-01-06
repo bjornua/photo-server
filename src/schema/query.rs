@@ -1,11 +1,9 @@
 use super::types;
 use crate::{app_state::LockedAppState, timeline};
-use juniper;
 
 #[derive(Debug)]
 pub struct QueryRoot(pub LockedAppState);
 
-#[juniper::object]
 impl QueryRoot {
     fn photos() -> Vec<types::photo::Photo> {
         timeline::get_pictures()

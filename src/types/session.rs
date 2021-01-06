@@ -1,9 +1,8 @@
 use crate::app_state;
-use crate::schema::types::user::User;
+use crate::types::user::User;
+use serde::{Deserialize, Serialize};
 
-use juniper::GraphQLObject;
-
-#[derive(GraphQLObject)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Session {
     pub id: String,
     pub user: Option<User>,
