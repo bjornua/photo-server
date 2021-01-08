@@ -13,7 +13,7 @@ panic="abort"
 codegen-units = 1
 
 [dependencies]
-rand = "0.7.3"
+rand = "0.8.0"
 bs58 = "0.4.0"
 
 [dependencies.chrono]
@@ -29,7 +29,7 @@ version = "1.0.60"
 default-features = false
 
 [dependencies.serde_derive]
-version = "1.0.117"
+version = "1.0.118"
 default-features = false
 
 [dependencies.argh]
@@ -37,11 +37,11 @@ version = "0.1.4"
 default-features = false
 
 [dependencies.tokio]
-version = "0.3.2"
+version = "1.0.1"
 default-features = false
 features = ['rt']
 
 [dependencies.tide]
-version = "0.14.0"
+version = "0.15.0"
 default-features = false
 features=['h1-server']
