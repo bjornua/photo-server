@@ -1,16 +1,48 @@
-use crate::app_state::LockedAppState;
+use crate::{
+    app_state::AppState,
+    lib::{authentication::Authentication, id::ID},
+};
 
-use serde;
+use serde::{Deserialize, Serialize};
 use tide::{Request, Response};
 
-#[derive(serde::Deserialize)]
-struct Params {
+#[derive(Deserialize)]
+struct AuthRequest {
     username: String,
     password: String,
 }
 
-pub async fn handle(mut req: Request<LockedAppState>) -> tide::Result<impl Into<Response>> {
-    let params: Params = req.take_body().into_json().await.unwrap();
+#[derive(Serialize)]
+#[serde(tag = "type")]
+enum AuthResponse {
+    Success,
+    Failed,
+}
 
-    return Ok(format!("{}", params.username));
+fn getSessionId<T>(req: &Request<T>) -> Option<ID> {
+    let value = req.header("Authorization")?.as_str();
+
+    let mut words = value.splitn(1, " ");
+
+    if words.next()? != "Bearer" {
+        return None;
+    };
+
+    return words.next()?.parse().ok();
+}
+
+pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Response>> {
+    let sessionId = getSessionId(&req).unwrap();
+    let params: AuthRequest = req.take_body().into_json().await?;
+
+    let authentication = req
+        .state()
+        .authenticate(&sessionId, &params.username, &params.password);
+
+    let result = match authentication {
+        Authentication::NotAuthenticated => AuthResponse::Failed,
+        Authentication::Authenticated { user } => AuthResponse::Success,
+    };
+
+    return serde_json::to_value(result).map_err(|e| tide::Error::new(422, e));
 }

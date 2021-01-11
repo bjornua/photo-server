@@ -1,14 +1,13 @@
-use crate::app_state::LockedAppState;
+use crate::app_state::AppState;
 use crate::types::session::Session;
 use serde_json;
 use tide::{Request, Response};
 
-pub async fn handle(req: Request<LockedAppState>) -> tide::Result<impl Into<Response>> {
-    let state = req.state();
-    let app_state = state.0.read().unwrap();
-    let sessions: Vec<Session> = app_state
-        .sessions
-        .values()
+pub async fn handle(req: Request<AppState>) -> tide::Result<impl Into<Response>> {
+    let sessions: Vec<Session> = req
+        .state()
+        .list_sessions()
+        .into_iter()
         .map(|session| session.into())
         .collect();
 
