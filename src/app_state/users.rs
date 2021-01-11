@@ -35,7 +35,7 @@ impl Users {
             Some(user) if user.password == password => Authentication::Authenticated {
                 user: Arc::downgrade(user),
             },
-            None => return Authentication::NotAuthenticated,
+            Some(_) | None => return Authentication::NotAuthenticated,
         }
     }
 }

@@ -3,6 +3,7 @@ use rand::{thread_rng, Rng};
 use std::fmt;
 use std::str::FromStr;
 
+#[derive(Debug)]
 pub enum IDDecodeError {
     BS58DecodeError(bs58::decode::Error),
     WrongLength,

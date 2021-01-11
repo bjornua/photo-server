@@ -34,32 +34,52 @@ impl AppState {
         }
     }
 
-    pub fn write(&self) -> RwLockWriteGuard<InnerAppState> {
-        self.inner.write().unwrap()
+    pub fn write(&self) -> WriteableState {
+        WriteableState {
+            inner: self.inner.write().unwrap(),
+        }
     }
 
-    pub fn read(&self) -> RwLockReadGuard<InnerAppState> {
-        self.inner.read().unwrap()
+    pub fn read(&self) -> ReadableState {
+        ReadableState {
+            inner: self.inner.read().unwrap(),
+        }
     }
+}
 
-    pub fn new_session(&self) -> &Session {
-        let mut state = self.write();
-        let session = state.sessions.create();
+pub struct ReadableState<'a> {
+    inner: RwLockReadGuard<'a, InnerAppState>,
+}
+
+impl<'a> ReadableState<'a> {
+    pub fn list_sessions(&self) -> Vec<&Session> {
+        return self.inner.sessions.list();
+    }
+}
+
+pub struct WriteableState<'a> {
+    inner: RwLockWriteGuard<'a, InnerAppState>,
+}
+
+impl<'a> WriteableState<'a> {
+    pub fn new_session(&mut self) -> &Session {
+        let session = self.inner.sessions.create();
         return session;
     }
-    pub fn authenticate(&self, sessionId: &ID, username: &str, password: &str) -> Authentication {
-        let state = self.read();
-        let authentication = state.users.authenticate(username, password);
+
+    pub fn authenticate(
+        &mut self,
+        session_id: &ID,
+        username: &str,
+        password: &str,
+    ) -> Authentication {
+        let authentication = self.inner.users.authenticate(username, password);
         match authentication {
             a @ Authentication::NotAuthenticated => return a,
             Authentication::Authenticated { user } => {
-                state.sessions.login(sessionId, user);
+                self.inner.sessions.login(session_id, user.clone());
+                return Authentication::Authenticated { user };
             }
         }
-        return authentication;
-    }
-    pub fn list_sessions(&self) -> Vec<&Session> {
-        let state = self.read();
-        return state.sessions.list();
     }
 }

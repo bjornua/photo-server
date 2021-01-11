@@ -51,11 +51,10 @@ impl Sessions {
 
     pub fn create(&mut self) -> &Session {
         let session = Session::new();
-        let session_ref = &session;
         let entry = self.inner.entry(session.token.clone());
 
         match entry {
-            std::collections::hash_map::Entry::Occupied(e) => {
+            std::collections::hash_map::Entry::Occupied(_) => {
                 panic!("Session exists")
             }
             std::collections::hash_map::Entry::Vacant(e) => e.insert(session),
@@ -66,8 +65,8 @@ impl Sessions {
         self.inner.values().collect()
     }
 
-    pub fn login(&mut self, sessionId: &ID, user: Weak<User>) -> Option<&Session> {
-        let session = self.inner.get_mut(sessionId)?;
+    pub fn login(&mut self, session_id: &ID, user: Weak<User>) -> Option<&Session> {
+        let session = self.inner.get_mut(session_id)?;
         session.authentication = Authentication::Authenticated { user };
         return Some(&*session);
     }
