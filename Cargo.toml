@@ -13,7 +13,7 @@ panic="abort"
 codegen-units = 1
 
 [dependencies]
-rand = "0.8.0"
+rand = "0.8.1"
 bs58 = "0.4.0"
 
 [dependencies.chrono]
@@ -25,7 +25,7 @@ version = "1.0.118"
 default-features = false
 
 [dependencies.serde_json]
-version = "1.0.60"
+version = "1.0.61"
 default-features = false
 
 [dependencies.serde_derive]
