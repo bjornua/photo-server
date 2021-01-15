@@ -67,12 +67,7 @@ impl<'a> WriteableState<'a> {
         return session;
     }
 
-    pub fn authenticate(
-        &mut self,
-        session_id: &ID,
-        username: &str,
-        password: &str,
-    ) -> Authentication {
+    pub fn login(&mut self, session_id: &ID, username: &str, password: &str) -> Authentication {
         let authentication = self.inner.users.authenticate(username, password);
         match authentication {
             a @ Authentication::NotAuthenticated => return a,
@@ -81,5 +76,9 @@ impl<'a> WriteableState<'a> {
                 return Authentication::Authenticated { user };
             }
         }
+    }
+
+    pub fn logout(&mut self, session_id: &ID) -> () {
+        self.inner.sessions.logout(session_id);
     }
 }

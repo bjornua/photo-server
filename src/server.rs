@@ -3,7 +3,8 @@ use crate::routes;
 pub async fn run(socket: std::net::SocketAddr) -> tide::Result<()> {
     let state: AppState = AppState::new();
     let mut app = tide::with_state(state);
-    app.at("/authenticate").post(routes::authenticate::handle);
+    app.at("/login").post(routes::logout::handle);
+    app.at("/logout").post(routes::login::handle);
     app.at("/session/list").get(routes::session_list::handle);
     app.at("/session/create")
         .post(routes::session_create::handle);

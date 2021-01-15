@@ -9,6 +9,12 @@ pub struct User {
     pub username: String,
     pub password: String,
 }
+impl PartialEq for User {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Users {
     inner: Vec<std::sync::Arc<User>>,

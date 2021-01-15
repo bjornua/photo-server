@@ -1,5 +1,7 @@
+#![allow(dead_code)]
 mod app_state;
 mod lib;
+mod permission;
 mod routes;
 mod server;
 mod timeline;

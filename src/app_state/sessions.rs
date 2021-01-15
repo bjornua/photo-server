@@ -70,4 +70,10 @@ impl Sessions {
         session.authentication = Authentication::Authenticated { user };
         return Some(&*session);
     }
+
+    pub fn logout(&mut self, session_id: &ID) -> Option<&Session> {
+        let session = self.inner.get_mut(session_id)?;
+        session.authentication = Authentication::NotAuthenticated;
+        return Some(&*session);
+    }
 }
