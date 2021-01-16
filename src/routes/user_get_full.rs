@@ -1,6 +1,9 @@
 use crate::{
     app_state::AppState,
-    lib::{authentication::get_authentication, id::ID},
+    lib::{
+        authentication::{get_authentication, get_user},
+        id::ID,
+    },
 };
 use crate::{
     permission,
@@ -14,25 +17,29 @@ use tide::{Request, Response};
 struct UserRequest {
     userId: ID,
 }
+
 #[derive(Serialize)]
+#[serde(tag = "type")]
 enum UserResponse {
     Success(User),
     Failure(Error),
 }
 
 #[derive(Serialize)]
+#[serde(tag = "type")]
 enum Error {
     AccessDenied,
+    NotLoggedIn,
+
     NotFound,
 }
 
 pub async fn handle(req: Request<AppState>) -> tide::Result<impl Into<Response>> {
     let state = req.state().read();
-    let auth_user = match get_user() {
-
+    let auth_user = match get_user(req, state) {
+        Some(user) => user,
+        None => return Ok(serde_json::to_value(Error::NotLoggedIn).unwrap()),
     };
-
-    let user = 
 
     let authentication = get_authentication(req, req.getState());
 

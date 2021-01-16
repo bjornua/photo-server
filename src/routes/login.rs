@@ -3,7 +3,6 @@ use crate::{
     lib::{authentication::get_session_id, authentication::Authentication},
 };
 
-use get_session_id::get_session_id;
 use serde::{Deserialize, Serialize};
 use tide::{Request, Response};
 

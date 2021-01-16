@@ -1,17 +1,17 @@
-use crate::types::user::User;
 use crate::{app_state, lib::authentication::Authentication};
+use crate::{lib::id::ID, types::user::User};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Session {
-    pub id: String,
+    pub id: ID,
     pub user: Option<User>,
 }
 
 impl From<&app_state::sessions::Session> for Session {
     fn from(s: &app_state::sessions::Session) -> Self {
         return Self {
-            id: s.token.to_string(),
+            id: s.token,
             user: match &s.authentication {
                 Authentication::NotAuthenticated => None,
                 Authentication::Authenticated { ref user } => {
