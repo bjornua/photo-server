@@ -8,8 +8,8 @@ mod timeline;
 mod types;
 
 use argh::FromArgs;
+use async_std::task;
 use std::net::{AddrParseError, SocketAddr, SocketAddrV4};
-use tokio;
 
 const DEFAULT_SOCKET: std::net::Ipv4Addr = std::net::Ipv4Addr::LOCALHOST;
 
@@ -35,12 +35,7 @@ fn main_result() -> Result<(), MainError> {
     let socket = SocketAddr::V4(SocketAddrV4::new(ip, port));
 
     println!("Starting server: http://{}/", socket);
-    let rt = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-
-    rt.block_on(server::run(socket))
-        .map_err(MainError::ServerError)?;
+    task::block_on(server::run(socket)).map_err(MainError::ServerError)?;
 
     Ok(())
 }

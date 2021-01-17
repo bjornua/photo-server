@@ -1,13 +1,14 @@
-use crate::app_state::{self, users::User, AppState, ReadableState};
+use crate::app_state::{self, users::User, ReadableState};
 use crate::lib::id::ID;
 use app_state::sessions::Session;
-use std::sync::Arc;
+use async_std::sync::Arc;
+
 use tide::http::Headers;
 
 #[derive(Clone, Debug)]
 pub enum Authentication {
     NotAuthenticated,
-    Authenticated { user: std::sync::Weak<User> },
+    Authenticated { user: async_std::sync::Weak<User> },
 }
 
 pub fn get_session_id<H: AsRef<Headers>>(headers: H) -> Option<ID> {
@@ -26,22 +27,22 @@ pub fn get_session_id<H: AsRef<Headers>>(headers: H) -> Option<ID> {
 
 pub fn get_authentication<H: AsRef<Headers>>(
     headers: H,
-    app_state: ReadableState,
+    app_state: &ReadableState,
 ) -> Authentication {
     let session_id = match get_session_id(headers) {
         Some(id) => id,
         None => return Authentication::NotAuthenticated,
     };
 
-    let sessionMaybe: Option<&Session> = app_state.get_session(session_id);
+    let session_maybe: Option<&Session> = app_state.get_session(&session_id);
 
-    return match sessionMaybe {
-        Some(s) => s,
+    return match session_maybe {
+        Some(s) => s.authentication.clone(),
         None => Authentication::NotAuthenticated,
     };
 }
 
-pub fn get_user<H: AsRef<Headers>>(headers: H, app_state: ReadableState) -> Option<Arc<User>> {
+pub fn get_user<H: AsRef<Headers>>(headers: H, app_state: &ReadableState) -> Option<Arc<User>> {
     let auth = get_authentication(headers, app_state);
 
     return match auth {

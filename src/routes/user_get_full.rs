@@ -1,21 +1,15 @@
 use crate::{
     app_state::AppState,
-    lib::{
-        authentication::{get_authentication, get_user},
-        id::ID,
-    },
+    lib::{authentication::get_authentication, id::ID},
 };
-use crate::{
-    permission,
-    types::{session::Session, user::User},
-};
+use crate::{permission, types::user::User};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use tide::{Request, Response};
 
 #[derive(Deserialize)]
 struct UserRequest {
-    userId: ID,
+    user_id: ID,
 }
 
 #[derive(Serialize)]
@@ -34,24 +28,22 @@ enum Error {
     NotFound,
 }
 
-pub async fn handle(req: Request<AppState>) -> tide::Result<impl Into<Response>> {
-    let state = req.state().read();
-    let auth_user = match get_user(req, state) {
+pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Response>> {
+    let params: UserRequest = req.take_body().into_json().await?;
+
+    let state = req.state().read().await;
+    let auth_user = get_authentication(&req, &state);
+
+    let target_user = match state.get_user(&params.user_id) {
         Some(user) => user,
-        None => return Ok(serde_json::to_value(Error::NotLoggedIn).unwrap()),
+        None => {
+            return Ok(serde_json::to_value(Error::NotFound).unwrap());
+        }
     };
 
-    let authentication = get_authentication(req, req.getState());
+    if !permission::full_user_read(auth_user, &*target_user) {
+        return Ok(serde_json::to_value(Error::AccessDenied).unwrap());
+    };
 
-    if !permission::full_user_read(session.user, user) {};
-
-    let sessions: Vec<Session> = req
-        .state()
-        .read()
-        .get_user()
-        .into_iter()
-        .map(|session| session.into())
-        .collect();
-
-    return Ok(serde_json::to_value(sessions).unwrap());
+    return Ok(serde_json::to_value(User::from(&*target_user)).unwrap());
 }

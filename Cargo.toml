@@ -11,38 +11,44 @@ opt-level = 'z'
 lto = true
 panic="abort"
 codegen-units = 1
+ 
+[dependencies.async-std]
+version = "1.8.0"
+default-features = true
+features = ["attributes","unstable"]
 
-[dependencies]
-rand = "0.8.1"
-bs58 = "0.4.0"
+[dependencies.rand]
+version = "0.8.2"
+default-features = true
+features=[]
+
+[dependencies.bs58]
+version = "0.4.0"
+default-features = true
+features=[]
 
 [dependencies.chrono]
 version = "0.4.19"
-default-features = false
+default-features = true
 features=['clock']
 
 [dependencies.serde]
-version = "1.0.118"
-default-features = false
+version = "1.0.119"
+default-features = true
 
 [dependencies.serde_json]
 version = "1.0.61"
-default-features = false
+default-features = true
 
 [dependencies.serde_derive]
-version = "1.0.118"
-default-features = false
+version = "1.0.119"
+default-features = true
 
 [dependencies.argh]
 version = "0.1.4"
-default-features = false
-
-[dependencies.tokio]
-version = "1.0.1"
-default-features = false
-features = ['rt']
+default-features = true
 
 [dependencies.tide]
 version = "0.15.0"
-default-features = false
+default-features = true
 features=['h1-server']

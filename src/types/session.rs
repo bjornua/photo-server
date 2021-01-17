@@ -11,7 +11,7 @@ pub struct Session {
 impl From<&app_state::sessions::Session> for Session {
     fn from(s: &app_state::sessions::Session) -> Self {
         return Self {
-            id: s.token,
+            id: s.token.clone(),
             user: match &s.authentication {
                 Authentication::NotAuthenticated => None,
                 Authentication::Authenticated { ref user } => {

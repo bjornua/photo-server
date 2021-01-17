@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use async_std::sync::Arc;
 
 use crate::lib::{authentication::Authentication, id::ID};
 
@@ -43,5 +43,9 @@ impl Users {
             },
             Some(_) | None => return Authentication::NotAuthenticated,
         }
+    }
+
+    pub fn get(&self, user_id: &ID) -> Option<Arc<User>> {
+        self.inner.iter().find(|&s| s.id == *user_id).cloned()
     }
 }
