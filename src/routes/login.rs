@@ -16,11 +16,11 @@ struct AuthRequest {
 #[serde(tag = "type")]
 enum AuthResponse {
     Success,
-    Failed(ErrorResponse),
+    Failed { error: Error },
 }
 #[derive(Serialize)]
 #[serde(tag = "type")]
-enum ErrorResponse {
+enum Error {
     AuthenticationFailed,
     SessionNotFound,
 }
@@ -37,10 +37,12 @@ pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Respon
 
     let result = match authentication {
         Ok(()) => AuthResponse::Success,
-        Err(LoginError::AuthenticationFailed) => {
-            AuthResponse::Failed(ErrorResponse::AuthenticationFailed)
-        }
-        Err(LoginError::SessionNotFound) => AuthResponse::Failed(ErrorResponse::SessionNotFound),
+        Err(LoginError::AuthenticationFailed) => AuthResponse::Failed {
+            error: Error::AuthenticationFailed,
+        },
+        Err(LoginError::SessionNotFound) => AuthResponse::Failed {
+            error: Error::SessionNotFound,
+        },
     };
 
     return serde_json::to_value(result).map_err(|e| tide::Error::new(422, e));

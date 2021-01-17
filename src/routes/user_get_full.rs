@@ -16,15 +16,13 @@ struct UserRequest {
 #[serde(tag = "type")]
 enum UserResponse {
     Success(User),
-    Failure(Error),
+    Failure { error: Error },
 }
 
 #[derive(Serialize)]
 #[serde(tag = "type")]
 enum Error {
     AccessDenied,
-    NotLoggedIn,
-
     NotFound,
 }
 
@@ -37,12 +35,18 @@ pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Respon
     let target_user = match state.get_user(&params.user_id) {
         Some(user) => user,
         None => {
-            return Ok(serde_json::to_value(Error::NotFound).unwrap());
+            return Ok(serde_json::to_value(UserResponse::Failure {
+                error: Error::NotFound,
+            })
+            .unwrap());
         }
     };
 
     if !permission::full_user_read(auth_user, &*target_user) {
-        return Ok(serde_json::to_value(Error::AccessDenied).unwrap());
+        return Ok(serde_json::to_value(UserResponse::Failure {
+            error: Error::AccessDenied,
+        })
+        .unwrap());
     };
 
     return Ok(serde_json::to_value(User::from(&*target_user)).unwrap());

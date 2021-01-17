@@ -15,7 +15,7 @@ codegen-units = 1
 [dependencies.async-std]
 version = "1.9.0"
 default-features = false
-features = ["unstable"]
+features = []
 
 [dependencies.rand]
 version = "0.7.3"
