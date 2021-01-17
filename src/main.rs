@@ -11,7 +11,7 @@ use argh::FromArgs;
 use async_std::task;
 use std::net::{AddrParseError, SocketAddr, SocketAddrV4};
 
-const DEFAULT_SOCKET: std::net::Ipv4Addr = std::net::Ipv4Addr::LOCALHOST;
+const DEFAULT_ADDR: std::net::Ipv4Addr = std::net::Ipv4Addr::LOCALHOST;
 
 fn main() {
     match main_result() {
@@ -29,7 +29,7 @@ fn main_result() -> Result<(), MainError> {
     let ip = args
         .ip
         .map(|ip| ip.parse())
-        .unwrap_or(Ok(DEFAULT_SOCKET))
+        .unwrap_or(Ok(DEFAULT_ADDR))
         .map_err(MainError::AddrParseError)?;
     let port = args.port.unwrap_or(3000);
     let socket = SocketAddr::V4(SocketAddrV4::new(ip, port));
