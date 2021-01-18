@@ -5,7 +5,13 @@ pub async fn run(socket: std::net::SocketAddr) -> tide::Result<()> {
     let mut app = tide::with_state(state);
     app.at("/login").post(routes::login::handle);
     app.at("/logout").post(routes::logout::handle);
-    app.at("/user").post(routes::user_get_full::handle);
+    app.at("/user/get").post(routes::user_get_full::handle);
+    app.at("/user/update")
+    app.at("/user/change_password")
+        .post(routes::change_password::handle);
+        app.at("/user/change_password")
+        .post(routes::change_password::handle);
+
     app.at("/session/list").get(routes::session_list::handle);
     app.at("/session/create")
         .post(routes::session_create::handle);
