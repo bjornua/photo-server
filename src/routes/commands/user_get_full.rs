@@ -1,53 +1,46 @@
 use crate::{
-    app_state::AppState,
-    lib::{authentication::get_authentication, id::ID},
+    app_state::{sessions::Session, AppState},
+    lib::id::ID,
+    permission,
 };
-use crate::{permission, types::user::User};
 use serde::{Deserialize, Serialize};
-use serde_json;
-use tide::{Request, Response};
 
 #[derive(Deserialize)]
-struct UserRequest {
-    user_id: ID,
+pub struct Input {
+    pub session_id: ID,
+    pub user_id: ID,
 }
 
 #[derive(Serialize)]
 #[serde(tag = "type")]
-enum UserResponse {
-    Success(User),
-    Failure { error: Error },
-}
-
-#[derive(Serialize)]
-#[serde(tag = "type")]
-enum Error {
+pub enum Output {
+    Success { id: ID, name: String },
+    UserNotFound,
+    SessionNotFound,
     AccessDenied,
-    NotFound,
+    NotAuthenticated,
+    InvalidSessionID,
 }
 
-pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Response>> {
-    let params: UserRequest = req.take_body().into_json().await?;
+pub async fn run<'a>(state: &AppState, input: Input) -> Output {
+    let state = state.read().await;
 
-    let state = req.state().read().await;
-    let auth_user = get_authentication(&req, &state);
+    let authentication = match state.get_session(&input.session_id) {
+        Some(Session { authentication, .. }) => authentication,
+        None => return Output::SessionNotFound,
+    };
 
-    let target_user = match state.get_user(&params.user_id) {
+    let target_user = match state.get_user(&input.user_id) {
         Some(user) => user,
-        None => {
-            return Ok(serde_json::to_value(UserResponse::Failure {
-                error: Error::NotFound,
-            })
-            .unwrap());
-        }
+        None => return Output::UserNotFound,
     };
 
-    if !permission::full_user_read(auth_user, &*target_user) {
-        return Ok(serde_json::to_value(UserResponse::Failure {
-            error: Error::AccessDenied,
-        })
-        .unwrap());
+    if !permission::full_user_read(authentication, &*target_user) {
+        return Output::AccessDenied;
     };
 
-    return Ok(serde_json::to_value(User::from(&*target_user)).unwrap());
+    return Output::Success {
+        id: input.user_id,
+        name: target_user.name.clone(),
+    };
 }

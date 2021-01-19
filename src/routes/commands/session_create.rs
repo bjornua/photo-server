@@ -1,9 +1,18 @@
-use crate::{app_state::AppState, types::session::Session};
-use serde_json;
-use tide::{Request, Response};
+use serde::{Deserialize, Serialize};
 
-pub async fn handle(req: Request<AppState>) -> tide::Result<impl Into<Response>> {
-    let mut state = req.state().write().await;
-    let session = state.new_session();
-    return Ok(serde_json::to_value(Session::from(session)).unwrap());
+use crate::{app_state::AppState, lib::id::ID};
+
+#[derive(Deserialize)]
+pub struct Input {}
+
+#[derive(Serialize)]
+#[serde(tag = "type")]
+pub enum Output {
+    Success { session_id: ID },
+}
+
+pub async fn run<'a>(state: &AppState, _input: Input) -> Output {
+    return Output::Success {
+        session_id: state.write().await.new_session().token.clone(),
+    };
 }

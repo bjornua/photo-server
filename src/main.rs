@@ -5,7 +5,6 @@ mod permission;
 mod routes;
 mod server;
 mod timeline;
-mod types;
 
 use argh::FromArgs;
 use async_std::task;

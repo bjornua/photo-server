@@ -1,22 +1,23 @@
-use crate::{app_state::AppState, lib::authentication::get_session_id};
-
 use serde::{Deserialize, Serialize};
-use tide::{Request, Response};
+
+use crate::{app_state::AppState, lib::id::ID};
 
 #[derive(Deserialize)]
-struct LogoutRequest {}
+pub struct Input {
+    pub session_id: ID,
+}
 
 #[derive(Serialize)]
 #[serde(tag = "type")]
-enum LogoutResponse {
+pub enum Output {
     Success,
+    SessionNotFound,
+    InvalidSessionId,
 }
 
-pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Response>> {
-    let session_id = get_session_id(&req).unwrap();
-    let _: LogoutRequest = req.take_body().into_json().await?;
-
-    req.state().write().await.logout(&session_id);
-
-    return serde_json::to_value(LogoutResponse::Success).map_err(|e| tide::Error::new(422, e));
+pub async fn run<'a>(state: &AppState, input: Input) -> Output {
+    return match state.write().await.logout(&input.session_id) {
+        Some(_) => Output::Success,
+        None => Output::SessionNotFound,
+    };
 }

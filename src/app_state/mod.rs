@@ -104,7 +104,7 @@ impl<'a> WriteableState<'a> {
         };
     }
 
-    pub fn logout(&mut self, session_id: &ID) -> () {
-        self.inner.sessions.logout(session_id);
+    pub fn logout(&mut self, session_id: &ID) -> Option<&Session> {
+        self.inner.sessions.logout(session_id)
     }
 }

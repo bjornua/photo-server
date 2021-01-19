@@ -1,9 +1,12 @@
-use crate::app_state::LoginError;
-use crate::lib::command::Context;
+use crate::{
+    app_state::{AppState, LoginError},
+    lib::id::ID,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 pub struct Input {
+    pub session_id: ID,
     pub handle: String,
     pub password: String,
 }
@@ -17,18 +20,12 @@ pub enum Output {
     InvalidSessionId,
 }
 
-pub async fn run<'a>(context: Context<'a>, input: Input) -> Output {
-    let session_id = match context.session_id {
-        Some(session_id) => session_id,
-        None => return Output::InvalidSessionId,
-    };
-
+pub async fn run<'a>(state: &AppState, input: Input) -> Output {
     let authentication =
-        context
-            .state
+        state
             .write()
             .await
-            .login(&session_id, &input.handle, &input.password);
+            .login(&input.session_id, &input.handle, &input.password);
 
     return match authentication {
         Ok(()) => Output::Success,

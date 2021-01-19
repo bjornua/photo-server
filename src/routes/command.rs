@@ -1,50 +1,72 @@
-use crate::{
-    lib::command::Context,
-    routes::commands::{login, logout, session_create, session_list, user_get_full},
-};
+use crate::routes::commands;
 
-use crate::{app_state::AppState, lib::authentication::get_session_id};
+use crate::app_state::AppState;
 
 use serde::{Deserialize, Serialize};
-use tide::{Request, Response};
+use tide::{Request, Response, StatusCode};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "type", content = "args")]
 enum Input {
-    Login(login::Input),
-    Logout(logout::Input),
-    SessionCreate(session_create::Input),
-    SessionList(session_list::Input),
-    UserGetFull(user_get_full::Input),
+    Login(commands::login::Input),
+    Logout(commands::logout::Input),
+    SessionCreate(commands::session_create::Input),
+    SessionList(commands::session_list::Input),
+    UserGetFull(commands::user_get_full::Input),
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "type", content = "args")]
 enum Output {
-    Login(login::Output),
-    Logout(logout::Output),
-    SessionCreate(session_create::Output),
-    SessionList(session_list::Output),
-    UserGetFull(user_get_full::Output),
+    Login(commands::login::Output),
+    Logout(commands::logout::Output),
+    SessionCreate(commands::session_create::Output),
+    SessionList(commands::session_list::Output),
+    UserGetFull(commands::user_get_full::Output),
 }
 
 pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Response>> {
-    let context = Context {
-        session_id: get_session_id(&req),
-        state: req.state(),
+    let command_input: Input = match req.take_body().into_json().await {
+        Ok(input) => input,
+        Err(err) => {
+            let err = err.downcast::<serde_json::Error>();
+            return Ok(match err {
+                Ok(serde_err) => {
+                    let mut response = Response::new(StatusCode::UnprocessableEntity);
+                    response.set_body(serde_err.to_string());
+                    response
+                }
+                Err(err) => {
+                    println!("Error: {}", err);
+                    Response::new(StatusCode::UnprocessableEntity)
+                }
+            });
+        }
     };
 
-    let command_input: Input = req.take_body().into_json().await?;
+    let state = req.state();
 
     let result: Output = match command_input {
-        Input::Login(args) => Output::Login(login::run(context, args).await),
-        Input::Logout(args) => Output::Logout(logout::run(context, args)),
-        Input::SessionCreate(args) => Output::SessionCreate(session_create::run(context, args)),
-        Input::SessionList(args) => Output::SessionList(session_list::run(context, args)),
-        Input::UserGetFull(args) => Output::UserGetFull(user_get_full::run(context, args)),
+        Input::Login(args) => Output::Login(commands::login::run(state, args).await),
+        Input::Logout(args) => Output::Logout(commands::logout::run(state, args).await),
+        Input::SessionCreate(args) => {
+            Output::SessionCreate(commands::session_create::run(state, args).await)
+        }
+        Input::SessionList(args) => {
+            Output::SessionList(commands::session_list::run(state, args).await)
+        }
+        Input::UserGetFull(args) => {
+            Output::UserGetFull(commands::user_get_full::run(state, args).await)
+        }
     };
 
-    return serde_json::to_value(result).map_err(|e| tide::Error::new(422, e));
+    return match serde_json::to_value(result) {
+        Ok(value) => Ok(Response::from(value)),
+        Err(err) => {
+            println!("Error serializing response: {}", err);
+            Ok(Response::new(StatusCode::UnprocessableEntity))
+        }
+    };
 }
