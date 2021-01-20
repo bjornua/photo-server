@@ -84,10 +84,10 @@ impl<'a> WriteableState<'a> {
     pub fn login(
         &mut self,
         session_id: &ID,
-        username: &str,
+        handle: &str,
         password: &str,
     ) -> Result<(), LoginError> {
-        let authentication = self.inner.users.authenticate(username, password);
+        let authentication = self.inner.users.authenticate(handle, password);
 
         let session = self
             .inner
@@ -106,5 +106,9 @@ impl<'a> WriteableState<'a> {
 
     pub fn logout(&mut self, session_id: &ID) -> Option<&Session> {
         self.inner.sessions.logout(session_id)
+    }
+
+    pub fn get_user_mut(&mut self, user_id: &ID) -> Option<&mut User> {
+        self.inner.users.get_mut(user_id)
     }
 }

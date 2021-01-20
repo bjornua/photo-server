@@ -8,7 +8,14 @@ fn get_auth_user(auth: &Authentication) -> Option<Arc<User>> {
     }
 }
 
-pub fn full_user_read(auth: &Authentication, target_user: &User) -> bool {
+pub fn session_list(auth: &Authentication) -> bool {
+    return match get_auth_user(auth) {
+        Some(_) => true,
+        None => false,
+    };
+}
+
+pub fn user_read(auth: &Authentication, target_user: &User) -> bool {
     let user = match get_auth_user(auth) {
         Some(user) => user,
         None => return false,
@@ -16,9 +23,12 @@ pub fn full_user_read(auth: &Authentication, target_user: &User) -> bool {
 
     return *user == *target_user;
 }
-pub fn list_sessions(auth: &Authentication) -> bool {
-    return match get_auth_user(auth) {
-        Some(_) => true,
-        None => false,
+
+pub fn user_update(auth: &Authentication, target_user: &User) -> bool {
+    let user = match get_auth_user(auth) {
+        Some(user) => user,
+        None => return false,
     };
+
+    return *user == *target_user;
 }

@@ -32,7 +32,7 @@ pub async fn run<'a>(state: &AppState, input: Input) -> Output {
         None => return Output::AccessDenied,
     };
 
-    if !permission::list_sessions(authentication) {
+    if !permission::session_list(authentication) {
         return Output::AccessDenied;
     };
 

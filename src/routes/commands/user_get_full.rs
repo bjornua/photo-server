@@ -35,7 +35,7 @@ pub async fn run<'a>(state: &AppState, input: Input) -> Output {
         None => return Output::UserNotFound,
     };
 
-    if !permission::full_user_read(authentication, &*target_user) {
+    if !permission::user_read(authentication, &*target_user) {
         return Output::AccessDenied;
     };
 

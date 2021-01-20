@@ -6,7 +6,7 @@ use crate::lib::{authentication::Authentication, id::ID};
 pub struct User {
     pub id: ID,
     pub name: String,
-    pub username: String,
+    pub handle: String,
     pub password: String,
 }
 impl PartialEq for User {
@@ -25,8 +25,8 @@ impl Users {
         let admin = User {
             id: ID::new(),
             name: String::from("Admin User"),
+            handle: String::from("admin"),
             password: String::from("admin"),
-            username: String::from("admin"),
         };
 
         Self {
@@ -34,8 +34,8 @@ impl Users {
         }
     }
 
-    pub fn authenticate(&self, username: &str, password: &str) -> Authentication {
-        let user = self.inner.iter().find(|&u| u.username == username);
+    pub fn authenticate(&self, handle: &str, password: &str) -> Authentication {
+        let user = self.inner.iter().find(|&u| u.handle == handle);
 
         match user {
             Some(user) if user.password == password => Authentication::Authenticated {
@@ -46,6 +46,9 @@ impl Users {
     }
 
     pub fn get(&self, user_id: &ID) -> Option<Arc<User>> {
+        self.inner.iter().find(|&s| s.id == *user_id).cloned()
+    }
+    pub fn get_mut(&self, user_id: &ID) -> Option<Arc<User>> {
         self.inner.iter().find(|&s| s.id == *user_id).cloned()
     }
 }
