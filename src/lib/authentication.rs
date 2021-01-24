@@ -1,9 +1,7 @@
-use std::sync::Weak;
-
 use crate::app_state::{self, users::User, ReadableState};
 use crate::lib::id::ID;
 use app_state::sessions::Session;
-use async_std::sync::{Arc, RwLock};
+use async_std::sync::{Arc, RwLock, Weak};
 
 use tide::http::Headers;
 

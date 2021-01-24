@@ -25,13 +25,13 @@ impl InnerAppState {
 
 #[derive(Debug, Clone)]
 pub struct AppState {
-    inner: async_std::sync::Arc<RwLock<InnerAppState>>,
+    inner: Arc<RwLock<InnerAppState>>,
 }
 
 impl AppState {
     pub fn new() -> Self {
         Self {
-            inner: async_std::sync::Arc::new(RwLock::new(InnerAppState::new())),
+            inner: Arc::new(RwLock::new(InnerAppState::new())),
         }
     }
 
