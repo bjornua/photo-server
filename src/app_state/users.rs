@@ -1,4 +1,9 @@
-use async_std::sync::Arc;
+use std::collections::{
+    hash_map::Entry::{Occupied, Vacant},
+    HashMap,
+};
+
+use async_std::sync::{Arc, RwLock, Weak};
 
 use crate::lib::{authentication::Authentication, id::ID};
 
@@ -15,9 +20,16 @@ impl PartialEq for User {
     }
 }
 
+#[derive(Debug)]
+pub enum InsertionError {
+    IDExists,
+    HandleExists,
+}
+
 #[derive(Clone, Debug)]
 pub struct Users {
-    inner: Vec<std::sync::Arc<User>>,
+    by_id: HashMap<ID, Arc<RwLock<User>>>,
+    by_handle: HashMap<String, Weak<RwLock<User>>>,
 }
 
 impl Users {
@@ -29,26 +41,60 @@ impl Users {
             password: String::from("admin"),
         };
 
-        Self {
-            inner: vec![Arc::new(admin)],
+        let mut self_ = Self {
+            by_id: HashMap::new(),
+            by_handle: HashMap::new(),
+        };
+        self_.insert(admin).unwrap();
+        return self_;
+    }
+
+    pub fn insert(&mut self, user: User) -> Result<Arc<RwLock<User>>, InsertionError> {
+        let handle_entry = match self.by_handle.entry(user.handle.clone()) {
+            Occupied(_) => {
+                return Err(InsertionError::HandleExists);
+            }
+            Vacant(entry) => entry,
+        };
+
+        let id_entry = match self.by_id.entry(user.id.clone()) {
+            Occupied(_) => {
+                return Err(InsertionError::IDExists);
+            }
+            Vacant(entry) => entry,
+        };
+
+        let user = Arc::new(RwLock::new(user));
+        handle_entry.insert(Arc::downgrade(&user));
+        id_entry.insert(user.clone());
+
+        return Ok(user);
+    }
+
+    pub fn get_by_handle(&self, handle: &str) -> Option<Arc<RwLock<User>>> {
+        match self.by_handle.get(handle).map(Weak::upgrade) {
+            Some(s) => return s,
+            None => None,
         }
     }
 
-    pub fn authenticate(&self, handle: &str, password: &str) -> Authentication {
-        let user = self.inner.iter().find(|&u| u.handle == handle);
+    pub async fn authenticate(&self, handle: &str, password: &str) -> Authentication {
+        let user_ref = match self.get_by_handle(handle) {
+            Some(user) => user,
+            None => return Authentication::NotAuthenticated,
+        };
+        let user = user_ref.read().await;
 
-        match user {
-            Some(user) if user.password == password => Authentication::Authenticated {
-                user: Arc::downgrade(user),
-            },
-            Some(_) | None => return Authentication::NotAuthenticated,
+        if user.password == password {
+            return Authentication::Authenticated {
+                user: Arc::downgrade(&user_ref),
+            };
         }
+
+        return Authentication::NotAuthenticated;
     }
 
-    pub fn get(&self, user_id: &ID) -> Option<Arc<User>> {
-        self.inner.iter().find(|&s| s.id == *user_id).cloned()
-    }
-    pub fn get_mut(&self, user_id: &ID) -> Option<Arc<User>> {
-        self.inner.iter().find(|&s| s.id == *user_id).cloned()
+    pub fn get(&self, user_id: &ID) -> Option<Arc<RwLock<User>>> {
+        self.by_id.get(user_id).cloned()
     }
 }

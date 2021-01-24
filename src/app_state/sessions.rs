@@ -4,6 +4,8 @@ use std::{
     sync::Weak,
 };
 
+use async_std::sync::RwLock;
+
 use crate::lib::{authentication::Authentication, id::ID};
 
 use super::users::User;
@@ -73,7 +75,7 @@ impl Sessions {
         self.inner.values().collect()
     }
 
-    pub fn login(&mut self, session_id: &ID, user: Weak<User>) -> Option<&Session> {
+    pub fn login(&mut self, session_id: &ID, user: Weak<RwLock<User>>) -> Option<&Session> {
         let session = self.inner.get_mut(session_id)?;
         session.authentication = Authentication::Authenticated { user };
         return Some(&*session);

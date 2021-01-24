@@ -1,14 +1,16 @@
+use std::sync::Weak;
+
 use crate::app_state::{self, users::User, ReadableState};
 use crate::lib::id::ID;
 use app_state::sessions::Session;
-use async_std::sync::Arc;
+use async_std::sync::{Arc, RwLock};
 
 use tide::http::Headers;
 
 #[derive(Clone, Debug)]
 pub enum Authentication {
     NotAuthenticated,
-    Authenticated { user: async_std::sync::Weak<User> },
+    Authenticated { user: Weak<RwLock<User>> },
 }
 
 pub fn get_session_id<H: AsRef<Headers>>(headers: H) -> Option<ID> {
@@ -42,7 +44,10 @@ pub fn get_authentication<H: AsRef<Headers>>(
     };
 }
 
-pub fn get_user<H: AsRef<Headers>>(headers: H, app_state: &ReadableState) -> Option<Arc<User>> {
+pub fn get_user<H: AsRef<Headers>>(
+    headers: H,
+    app_state: &ReadableState,
+) -> Option<Arc<RwLock<User>>> {
     let auth = get_authentication(headers, app_state);
 
     return match auth {

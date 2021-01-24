@@ -21,11 +21,11 @@ pub enum Output {
 }
 
 pub async fn run<'a>(state: &AppState, input: Input) -> Output {
-    let authentication =
-        state
-            .write()
-            .await
-            .login(&input.session_id, &input.handle, &input.password);
+    let authentication = state
+        .write()
+        .await
+        .login(&input.session_id, &input.handle, &input.password)
+        .await;
 
     return match authentication {
         Ok(()) => Output::Success,

@@ -61,7 +61,7 @@ impl<'a> ReadableState<'a> {
         self.inner.sessions.get(session_id)
     }
 
-    pub fn get_user(&self, user_id: &ID) -> Option<Arc<User>> {
+    pub fn get_user(&self, user_id: &ID) -> Option<Arc<RwLock<User>>> {
         self.inner.users.get(user_id)
     }
 }
@@ -81,23 +81,23 @@ impl<'a> WriteableState<'a> {
         return session;
     }
 
-    pub fn login(
+    pub async fn login(
         &mut self,
         session_id: &ID,
         handle: &str,
         password: &str,
     ) -> Result<(), LoginError> {
-        let authentication = self.inner.users.authenticate(handle, password);
-
-        let session = self
-            .inner
-            .sessions
-            .get_mut(session_id)
-            .ok_or(LoginError::SessionNotFound)?;
+        let authentication = self.inner.users.authenticate(handle, password).await;
 
         return match authentication {
             Authentication::NotAuthenticated => Err(LoginError::AuthenticationFailed),
             a @ Authentication::Authenticated { .. } => {
+                let session = self
+                    .inner
+                    .sessions
+                    .get_mut(session_id)
+                    .ok_or(LoginError::SessionNotFound)?;
+
                 session.authentication = a;
                 Ok(())
             }
@@ -106,9 +106,5 @@ impl<'a> WriteableState<'a> {
 
     pub fn logout(&mut self, session_id: &ID) -> Option<&Session> {
         self.inner.sessions.logout(session_id)
-    }
-
-    pub fn get_user_mut(&mut self, user_id: &ID) -> Option<&mut User> {
-        self.inner.users.get_mut(user_id)
     }
 }

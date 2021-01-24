@@ -36,19 +36,19 @@ pub async fn run<'a>(state: &AppState, input: Input) -> Output {
         return Output::AccessDenied;
     };
 
-    let sessions: Vec<Session> = state
-        .list_sessions()
-        .into_iter()
-        .map(|session| Session {
+    let mut sessions: Vec<Session> = Vec::new();
+
+    for session in state.list_sessions().into_iter() {
+        sessions.push(Session {
             token: session.token.clone(),
             auth_user: match &session.authentication {
                 crate::lib::authentication::Authentication::NotAuthenticated => None,
                 crate::lib::authentication::Authentication::Authenticated { user } => {
-                    Some(user.upgrade().unwrap().name.clone())
+                    Some(user.upgrade().unwrap().read().await.name.clone())
                 }
             },
-        })
-        .collect();
+        });
+    }
 
     return Output::Success(sessions);
 }

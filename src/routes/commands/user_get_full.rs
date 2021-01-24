@@ -35,12 +35,12 @@ pub async fn run<'a>(state: &AppState, input: Input) -> Output {
         None => return Output::UserNotFound,
     };
 
-    if !permission::user_read(authentication, &*target_user) {
+    if !permission::user_read(authentication, &*target_user.read().await).await {
         return Output::AccessDenied;
     };
 
     return Output::Success {
         id: input.user_id,
-        name: target_user.name.clone(),
+        name: target_user.read().await.name.clone(),
     };
 }
