@@ -34,7 +34,7 @@ pub fn get_authentication<H: AsRef<Headers>>(
         None => return Authentication::NotAuthenticated,
     };
 
-    let session_maybe: Option<&Session> = app_state.get_session(&session_id);
+    let session_maybe: Option<&Session> = app_state.session_get(&session_id);
 
     return match session_maybe {
         Some(s) => s.authentication.clone(),

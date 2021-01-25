@@ -53,15 +53,15 @@ pub struct ReadableState<'a> {
 }
 
 impl<'a> ReadableState<'a> {
-    pub fn list_sessions(&self) -> Vec<&Session> {
+    pub fn session_list(&self) -> Vec<&Session> {
         return self.inner.sessions.list();
     }
 
-    pub fn get_session(&self, session_id: &ID) -> Option<&Session> {
+    pub fn session_get(&self, session_id: &ID) -> Option<&Session> {
         self.inner.sessions.get(session_id)
     }
 
-    pub fn get_user(&self, user_id: &ID) -> Option<Arc<RwLock<User>>> {
+    pub fn user_get(&self, user_id: &ID) -> Option<Arc<RwLock<User>>> {
         self.inner.users.get(user_id)
     }
 }

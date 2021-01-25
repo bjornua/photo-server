@@ -27,7 +27,7 @@ pub enum Output {
 pub async fn run<'a>(state: &AppState, input: Input) -> Output {
     let state = state.read().await;
 
-    let authentication = match state.get_session(&input.session_id) {
+    let authentication = match state.session_get(&input.session_id) {
         Some(sessions::Session { authentication, .. }) => authentication,
         None => return Output::AccessDenied,
     };
@@ -38,7 +38,7 @@ pub async fn run<'a>(state: &AppState, input: Input) -> Output {
 
     let mut sessions: Vec<Session> = Vec::new();
 
-    for session in state.list_sessions().into_iter() {
+    for session in state.session_list().into_iter() {
         sessions.push(Session {
             token: session.token.clone(),
             auth_user: match &session.authentication {

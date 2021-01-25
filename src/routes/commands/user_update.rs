@@ -28,12 +28,12 @@ pub enum Output {
 pub async fn run(state: &AppState, input: Input) -> Output {
     let state = state.read().await;
 
-    let authentication = match state.get_session(&input.session_id) {
+    let authentication = match state.session_get(&input.session_id) {
         Some(Session { authentication, .. }) => authentication,
         None => return Output::SessionNotFound,
     };
 
-    let target_user_ref = match state.get_user(&input.user_id) {
+    let target_user_ref = match state.user_get(&input.user_id) {
         Some(user) => user,
         None => return Output::UserNotFound,
     };

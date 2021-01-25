@@ -12,17 +12,19 @@ enum Input {
     Login(commands::login::Input),
     Logout(commands::logout::Input),
     SessionCreate(commands::session_create::Input),
+    SessionGet(commands::session_get::Input),
     SessionList(commands::session_list::Input),
     UserGetFull(commands::user_get_full::Input),
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-#[serde(tag = "type", content = "args")]
+#[serde(tag = "type", content = "result")]
 enum Output {
     Login(commands::login::Output),
     Logout(commands::logout::Output),
     SessionCreate(commands::session_create::Output),
+    SessionGet(commands::session_get::Output),
     SessionList(commands::session_list::Output),
     UserGetFull(commands::user_get_full::Output),
 }
@@ -56,6 +58,9 @@ pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Respon
         }
         Input::SessionList(args) => {
             Output::SessionList(commands::session_list::run(state, args).await)
+        }
+        Input::SessionGet(args) => {
+            Output::SessionGet(commands::session_get::run(state, args).await)
         }
         Input::UserGetFull(args) => {
             Output::UserGetFull(commands::user_get_full::run(state, args).await)
