@@ -1,3 +1,4 @@
+pub mod command;
 pub mod sessions;
 pub mod users;
 
