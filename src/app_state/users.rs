@@ -69,21 +69,7 @@ impl Users {
         }
     }
 
-    pub async fn authenticate(&self, handle: &str, password: &str) -> Authentication {
-        let user_ref = match self.get_by_handle(handle) {
-            Some(user) => user,
-            None => return Authentication::NotAuthenticated,
-        };
-        let user = user_ref.read().await;
-
-        if user.password == password {
-            return Authentication::Authenticated {
-                user: Arc::downgrade(&user_ref),
-            };
-        }
-
-        return Authentication::NotAuthenticated;
-    }
+    pub async fn authenticate(&self, handle: &str, password: &str) -> Authentication {}
 
     pub fn get_by_id(&self, user_id: &ID) -> Option<Arc<RwLock<User>>> {
         self.by_id.get(user_id).cloned()
