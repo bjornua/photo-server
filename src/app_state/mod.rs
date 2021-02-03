@@ -1,111 +1,49 @@
 pub mod command;
 pub mod sessions;
+pub mod store;
 pub mod users;
 
 use async_std::sync::Arc;
-use async_std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use sessions::Session;
+use command::Command;
+use tide::Middleware;
 use users::User;
 
-use crate::lib::{authentication::Authentication, id::ID};
+use crate::app_state::command::DatedCommand;
 
 #[derive(Clone, Debug)]
-struct InnerAppState {
+struct AppState {
     pub users: users::Users,
     pub sessions: sessions::Sessions,
 }
 
-impl InnerAppState {
-    pub fn new() -> Self {
-        return Self {
-            users: users::Users::new(),
-            sessions: sessions::Sessions::new(),
-        };
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct AppState {
-    inner: Arc<RwLock<InnerAppState>>,
-}
-
 impl AppState {
-    pub fn new() -> Self {
-        Self {
-            inner: Arc::new(RwLock::new(InnerAppState::new())),
-        }
-    }
-
-    pub async fn write<'a>(&'a self) -> WriteableState<'a> {
-        WriteableState {
-            inner: self.inner.write().await,
-        }
-    }
-
-    pub async fn read<'a>(&'a self) -> ReadableState<'a> {
-        ReadableState {
-            inner: self.inner.read().await,
-        }
-    }
-}
-
-pub struct ReadableState<'a> {
-    inner: RwLockReadGuard<'a, InnerAppState>,
-}
-
-impl<'a> ReadableState<'a> {
-    pub fn session_list(&self) -> Vec<&Session> {
-        return self.inner.sessions.list();
-    }
-
-    pub fn session_get(&self, session_id: &ID) -> Option<&Session> {
-        self.inner.sessions.get(session_id)
-    }
-
-    pub fn user_get(&self, user_id: &ID) -> Option<Arc<RwLock<User>>> {
-        self.inner.users.get(user_id)
-    }
-}
-
-pub struct WriteableState<'a> {
-    inner: RwLockWriteGuard<'a, InnerAppState>,
-}
-
-pub enum LoginError {
-    SessionNotFound,
-    AuthenticationFailed,
-}
-
-impl<'a> WriteableState<'a> {
-    pub fn new_session(&mut self) -> &Session {
-        let session = self.inner.sessions.create();
-        return session;
-    }
-
-    pub async fn login(
-        &mut self,
-        session_id: &ID,
-        handle: &str,
-        password: &str,
-    ) -> Result<(), LoginError> {
-        let authentication = self.inner.users.authenticate(handle, password).await;
-
-        return match authentication {
-            Authentication::NotAuthenticated => Err(LoginError::AuthenticationFailed),
-            a @ Authentication::Authenticated { .. } => {
-                let session = self
-                    .inner
-                    .sessions
-                    .get_mut(session_id)
-                    .ok_or(LoginError::SessionNotFound)?;
-
-                session.authentication = a;
-                Ok(())
+    fn on_command(&mut self, command: DatedCommand) {
+        match command.kind {
+            Command::SessionLogin {
+                session_id,
+                user_id,
+            } => {
+                let user = self.users.get_by_id(&session_id).unwrap();
+                self.sessions.login(&session_id, Arc::downgrade(&user));
             }
-        };
-    }
-
-    pub fn logout(&mut self, session_id: &ID) -> Option<&Session> {
-        self.inner.sessions.logout(session_id)
+            Command::SessionPing { session_id } => self.sessions.ping(&session_id, command.date),
+            Command::SessionLogout { session_id } => self.sessions.logout(&session_id),
+            Command::SessionCreate { session_id } => self.sessions.create(session_id, command.date),
+            Command::UserCreate {
+                id,
+                name,
+                handle,
+                password,
+            } => {
+                self.users
+                    .insert(User {
+                        id,
+                        name,
+                        handle,
+                        password,
+                    })
+                    .unwrap();
+            }
+        }
     }
 }

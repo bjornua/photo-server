@@ -34,19 +34,10 @@ pub struct Users {
 
 impl Users {
     pub fn new() -> Self {
-        let admin = User {
-            id: ID::new(),
-            name: String::from("Admin User"),
-            handle: String::from("admin"),
-            password: String::from("admin"),
-        };
-
-        let mut self_ = Self {
+        return Self {
             by_id: HashMap::new(),
             by_handle: HashMap::new(),
         };
-        self_.insert(admin).unwrap();
-        return self_;
     }
 
     pub fn insert(&mut self, user: User) -> Result<Arc<RwLock<User>>, InsertionError> {
@@ -94,7 +85,7 @@ impl Users {
         return Authentication::NotAuthenticated;
     }
 
-    pub fn get(&self, user_id: &ID) -> Option<Arc<RwLock<User>>> {
+    pub fn get_by_id(&self, user_id: &ID) -> Option<Arc<RwLock<User>>> {
         self.by_id.get(user_id).cloned()
     }
 }

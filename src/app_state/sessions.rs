@@ -17,16 +17,6 @@ pub struct Session {
     pub authentication: Authentication,
 }
 
-impl Session {
-    pub fn new() -> Self {
-        Self {
-            token: ID::new(),
-            authentication: Authentication::NotAuthenticated,
-            last_seen: chrono::Utc::now(),
-        }
-    }
-}
-
 impl Hash for Session {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.token.hash(state)
@@ -51,10 +41,13 @@ impl Sessions {
         }
     }
 
-    pub fn create(&mut self) -> &Session {
-        let session = Session::new();
+    pub fn create(&mut self, token: ID, date: chrono::DateTime<chrono::Utc>) {
+        let session = Session {
+            authentication: Authentication::NotAuthenticated,
+            last_seen: date,
+            token,
+        };
         let entry = self.inner.entry(session.token.clone());
-
         match entry {
             std::collections::hash_map::Entry::Occupied(_) => {
                 panic!("Session exists")
@@ -81,9 +74,13 @@ impl Sessions {
         return Some(&*session);
     }
 
-    pub fn logout(&mut self, session_id: &ID) -> Option<&Session> {
-        let session = self.inner.get_mut(session_id)?;
+    pub fn ping(&mut self, session_id: &ID, date: chrono::DateTime<chrono::Utc>) {
+        let session = self.inner.get_mut(session_id).unwrap();
+        session.last_seen = date;
+    }
+
+    pub fn logout(&mut self, session_id: &ID) {
+        let session = self.inner.get_mut(session_id).unwrap();
         session.authentication = Authentication::NotAuthenticated;
-        return Some(&*session);
     }
 }

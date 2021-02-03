@@ -1,4 +1,4 @@
-use crate::app_state::{self, users::User, ReadableState};
+use crate::app_state::{self, users::User};
 use crate::lib::id::ID;
 use app_state::sessions::Session;
 use async_std::sync::{Arc, RwLock, Weak};
@@ -25,10 +25,7 @@ pub fn get_session_id<H: AsRef<Headers>>(headers: H) -> Option<ID> {
     return str.parse().ok();
 }
 
-pub fn get_authentication<H: AsRef<Headers>>(
-    headers: H,
-    app_state: &ReadableState,
-) -> Authentication {
+pub fn get_authentication<H: AsRef<Headers>>(headers: H, app_state: &AppState) -> Authentication {
     let session_id = match get_session_id(headers) {
         Some(id) => id,
         None => return Authentication::NotAuthenticated,
