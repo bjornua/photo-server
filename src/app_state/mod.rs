@@ -5,15 +5,23 @@ pub mod users;
 
 use async_std::sync::Arc;
 use command::Command;
-use tide::Middleware;
 use users::User;
 
 use crate::app_state::command::DatedCommand;
 
 #[derive(Clone, Debug)]
-struct AppState {
+pub struct AppState {
     pub users: users::Users,
     pub sessions: sessions::Sessions,
+}
+
+impl AppState {
+    pub fn new() -> Self {
+        Self {
+            sessions: sessions::Sessions::new(),
+            users: users::Users::new(),
+        }
+    }
 }
 
 impl AppState {

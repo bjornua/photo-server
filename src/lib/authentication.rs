@@ -1,6 +1,6 @@
 use crate::app_state::{self, users::User};
 use crate::lib::id::ID;
-use app_state::sessions::Session;
+use app_state::{sessions::Session, AppState};
 use async_std::sync::{Arc, RwLock, Weak};
 
 use tide::http::Headers;
@@ -31,7 +31,7 @@ pub fn get_authentication<H: AsRef<Headers>>(headers: H, app_state: &AppState) -
         None => return Authentication::NotAuthenticated,
     };
 
-    let session_maybe: Option<&Session> = app_state.session_get(&session_id);
+    let session_maybe: Option<&Session> = app_state.sessions.get(&session_id);
 
     return match session_maybe {
         Some(s) => s.authentication.clone(),
@@ -39,10 +39,7 @@ pub fn get_authentication<H: AsRef<Headers>>(headers: H, app_state: &AppState) -
     };
 }
 
-pub fn get_user<H: AsRef<Headers>>(
-    headers: H,
-    app_state: &ReadableState,
-) -> Option<Arc<RwLock<User>>> {
+pub fn get_user<H: AsRef<Headers>>(headers: H, app_state: &AppState) -> Option<Arc<RwLock<User>>> {
     let auth = get_authentication(headers, app_state);
 
     return match auth {

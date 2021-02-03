@@ -53,7 +53,7 @@ impl Sessions {
                 panic!("Session exists")
             }
             std::collections::hash_map::Entry::Vacant(e) => e.insert(session),
-        }
+        };
     }
 
     pub fn get(&self, session_id: &ID) -> Option<&Session> {

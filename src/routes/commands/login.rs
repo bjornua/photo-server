@@ -1,7 +1,4 @@
-use crate::{
-    app_state::{AppState, LoginError},
-    lib::id::ID,
-};
+use crate::{app_state::{self, AppState}, lib::{authentication::Authentication, id::ID}};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -21,6 +18,21 @@ pub enum Output {
 }
 
 pub async fn run<'a>(state: &AppState, input: Input) -> Output {
+    let user_ref = match state.users.get_by_handle(&input.handle) {
+        Some(user) => user,
+        None => return Output::AuthenticationFailed,
+    };
+    let user = user_ref.read().await;
+
+    if user.password != input.password {
+        return Output::AuthenticationFailed;
+    }
+
+    return Authentication::Authenticated {
+        user: Arc::downgrade(&user_ref),
+    };
+
+    AppState.
     let authentication = state
         .write()
         .await
@@ -29,7 +41,7 @@ pub async fn run<'a>(state: &AppState, input: Input) -> Output {
 
     return match authentication {
         Ok(()) => Output::Success,
-        Err(LoginError::AuthenticationFailed) => Output::AuthenticationFailed,
-        Err(LoginError::SessionNotFound) => Output::SessionNotFound,
+        Err(LoginError::AuthenticationFailed) => ,
+        Err(LoginError::SessionNotFound) => ,
     };
 }
