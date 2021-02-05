@@ -40,7 +40,7 @@ impl Users {
         };
     }
 
-    pub fn insert(&mut self, user: User) -> Result<Arc<RwLock<User>>, InsertionError> {
+    pub fn insert(self, user: User) -> Result<Arc<RwLock<User>>, InsertionError> {
         let handle_entry = match self.by_handle.entry(user.handle.clone()) {
             Occupied(_) => {
                 return Err(InsertionError::HandleExists);
@@ -68,8 +68,6 @@ impl Users {
             None => None,
         }
     }
-
-    pub async fn authenticate(&self, handle: &str, password: &str) -> Authentication {}
 
     pub fn get_by_id(&self, user_id: &ID) -> Option<Arc<RwLock<User>>> {
         self.by_id.get(user_id).cloned()

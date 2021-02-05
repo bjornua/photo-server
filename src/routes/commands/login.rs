@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use crate::{app_state::{self, AppState}, lib::{authentication::Authentication, id::ID}};
 use serde::{Deserialize, Serialize};
 
@@ -23,10 +25,14 @@ pub async fn run<'a>(state: &AppState, input: Input) -> Output {
         None => return Output::AuthenticationFailed,
     };
     let user = user_ref.read().await;
+    let test = &mut user;
+
+    
 
     if user.password != input.password {
         return Output::AuthenticationFailed;
     }
+
 
     return Authentication::Authenticated {
         user: Arc::downgrade(&user_ref),

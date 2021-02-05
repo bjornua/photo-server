@@ -3,19 +3,20 @@ pub mod sessions;
 pub mod store;
 pub mod users;
 
-use async_std::sync::Arc;
+use async_std::sync::{Arc, RwLock, RwLockReadGuard};
 use command::Command;
+use futures::channel::mpsc;
 use users::User;
 
 use crate::app_state::command::DatedCommand;
 
 #[derive(Clone, Debug)]
-pub struct AppState {
+pub struct Store {
     pub users: users::Users,
     pub sessions: sessions::Sessions,
 }
 
-impl AppState {
+impl Store {
     pub fn new() -> Self {
         Self {
             sessions: sessions::Sessions::new(),
@@ -24,7 +25,7 @@ impl AppState {
     }
 }
 
-impl AppState {
+impl Store {
     fn on_command(&mut self, command: DatedCommand) {
         match command.kind {
             Command::SessionLogin {
@@ -53,5 +54,20 @@ impl AppState {
                     .unwrap();
             }
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct AppState {
+    store: Arc<RwLock<Store>>,
+    command_sender: futures_channel::mpsc::UnboundedSender<Command>,
+}
+
+impl AppState {
+    pub async fn get_store<'a>(&'a self) -> RwLockReadGuard<'a, Store> {
+        self.store.read().await
+    }
+    pub fn write(&self, command: Command) {
+        self.command_sender.unbounded_send(command);
     }
 }
