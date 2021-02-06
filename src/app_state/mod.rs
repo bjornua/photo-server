@@ -1,14 +1,13 @@
-pub mod command;
+pub mod event;
 pub mod sessions;
 pub mod store;
 pub mod users;
 
 use async_std::sync::{Arc, RwLock, RwLockReadGuard};
-use command::Command;
-use futures::channel::mpsc;
+use event::Event;
 use users::User;
 
-use crate::app_state::command::DatedCommand;
+use crate::app_state::event::DateEvent;
 
 #[derive(Clone, Debug)]
 pub struct Store {
@@ -26,19 +25,19 @@ impl Store {
 }
 
 impl Store {
-    fn on_command(&mut self, command: DatedCommand) {
+    fn on_event(&mut self, command: DateEvent) {
         match command.kind {
-            Command::SessionLogin {
+            Event::SessionLogin {
                 session_id,
                 user_id,
             } => {
                 let user = self.users.get_by_id(&session_id).unwrap();
                 self.sessions.login(&session_id, Arc::downgrade(&user));
             }
-            Command::SessionPing { session_id } => self.sessions.ping(&session_id, command.date),
-            Command::SessionLogout { session_id } => self.sessions.logout(&session_id),
-            Command::SessionCreate { session_id } => self.sessions.create(session_id, command.date),
-            Command::UserCreate {
+            Event::SessionPing { session_id } => self.sessions.ping(&session_id, command.date),
+            Event::SessionLogout { session_id } => self.sessions.logout(&session_id),
+            Event::SessionCreate { session_id } => self.sessions.create(session_id, command.date),
+            Event::UserCreate {
                 id,
                 name,
                 handle,
@@ -60,14 +59,21 @@ impl Store {
 #[derive(Clone)]
 pub struct AppState {
     store: Arc<RwLock<Store>>,
-    command_sender: futures_channel::mpsc::UnboundedSender<Command>,
 }
 
 impl AppState {
     pub async fn get_store<'a>(&'a self) -> RwLockReadGuard<'a, Store> {
         self.store.read().await
     }
-    pub fn write(&self, command: Command) {
-        self.command_sender.unbounded_send(command);
+
+    // We take and return the value here to discourage deadlocks
+    pub async fn write(self, undated_event: Event) -> Self {
+        let event = DateEvent {
+            date: chrono::Utc::now(),
+            kind: undated_event,
+        };
+        println!("Logging event: {:?}", event);
+        self.store.write().await.on_event(event);
+        self
     }
 }

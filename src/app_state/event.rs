@@ -1,6 +1,7 @@
 use crate::lib::id::ID;
 
-pub enum Command {
+#[derive(Debug)]
+pub enum Event {
     SessionLogin {
         session_id: ID,
         user_id: ID,
@@ -21,8 +22,8 @@ pub enum Command {
         password: String,
     },
 }
-
-pub struct DatedCommand {
+#[derive(Debug)]
+pub struct DateEvent {
     pub date: chrono::DateTime<chrono::Utc>,
-    pub kind: Command,
+    pub kind: Event,
 }

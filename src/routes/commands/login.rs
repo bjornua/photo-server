@@ -1,6 +1,10 @@
 use std::borrow::Borrow;
 
-use crate::{app_state::{self, AppState}, lib::{authentication::Authentication, id::ID}};
+use crate::{
+    app_state::{self, AppState},
+    lib::{authentication::Authentication, id::ID},
+};
+use app_state::{event::Event, sessions::Session};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -16,38 +20,31 @@ pub enum Output {
     Success,
     AuthenticationFailed,
     SessionNotFound,
-    InvalidSessionId,
 }
 
-pub async fn run<'a>(state: &AppState, input: Input) -> Output {
-    let user_ref = match state.users.get_by_handle(&input.handle) {
+pub async fn run<'a>(state: AppState, input: Input) -> Output {
+    let store = state.get_store().await;
+
+    if store.sessions.get(&input.session_id).is_none() {
+        return Output::SessionNotFound;
+    }
+
+    let user_ref = match store.users.get_by_handle(&input.handle) {
         Some(user) => user,
         None => return Output::AuthenticationFailed,
     };
     let user = user_ref.read().await;
-    let test = &mut user;
-
-    
 
     if user.password != input.password {
         return Output::AuthenticationFailed;
     }
 
+    drop(store);
 
-    return Authentication::Authenticated {
-        user: Arc::downgrade(&user_ref),
-    };
+    state.write(Event::SessionLogin {
+        session_id: input.session_id,
+        user_id: user.id.clone(),
+    });
 
-    AppState.
-    let authentication = state
-        .write()
-        .await
-        .login(&input.session_id, &input.handle, &input.password)
-        .await;
-
-    return match authentication {
-        Ok(()) => Output::Success,
-        Err(LoginError::AuthenticationFailed) => ,
-        Err(LoginError::SessionNotFound) => ,
-    };
+    return Output::Success;
 }
