@@ -1,5 +1,5 @@
 use crate::{
-    app_state::{sessions::Session, AppState},
+    app_state::{sessions::Session, RequestState},
     lib::id::ID,
     permission,
 };
@@ -22,11 +22,9 @@ pub enum Output {
     UserNotFound,
     SessionNotFound,
     AccessDenied,
-    NotAuthenticated,
-    InvalidSessionID,
 }
 
-pub async fn run<'a>(state: AppState, input: Input) -> Output {
+pub async fn run<'a>(state: RequestState, input: Input) -> Output {
     let store = state.get_store().await;
 
     let authentication = match store.sessions.get(&input.session_id) {

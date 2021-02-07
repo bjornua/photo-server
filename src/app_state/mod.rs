@@ -67,41 +67,49 @@ impl AppState {
             store: Arc::new(RwLock::new(Store::new())),
         }
     }
-}
 
-impl AppState {
+    pub fn into_request_state(self, date: chrono::DateTime<chrono::Utc>) -> RequestState {
+        RequestState {
+            app_state: self,
+            date,
+        }
+    }
+
+    pub fn into_request_state_current_time(self) -> RequestState {
+        self.into_request_state(chrono::Utc::now())
+    }
+
     pub async fn get_store<'a>(&'_ self) -> RwLockReadGuard<'_, Store> {
         self.store.read().await
     }
 
     // We take and return the value here to discourage deadlocks
-    pub async fn write(self, undated_event: Event) -> Self {
-        let event = DateEvent {
-            date: chrono::Utc::now(),
-            kind: undated_event,
-        };
+    pub async fn write(self, event: DateEvent) -> Self {
         println!("{date}: {kind:?}", date = event.date, kind = event.kind);
         self.store.write().await.on_event(event);
         self
     }
+}
 
-    pub async fn write_many<'a, T: IntoIterator<Item = &'a Event>>(
-        self,
-        undated_events: T,
-    ) -> Self {
-        let date = chrono::Utc::now();
+#[derive(Clone)]
+pub struct RequestState {
+    app_state: AppState,
+    date: chrono::DateTime<chrono::Utc>,
+}
 
-        let mut store = self.store.write().await;
-        for kind in undated_events.into_iter() {
-            let event = DateEvent {
-                date,
-                kind: kind.clone(),
-            };
-            println!("{date}: {kind:?}", date = event.date, kind = event.kind);
-            store.on_event(event);
-        }
-        drop(store);
+impl RequestState {
+    pub async fn get_store<'a>(&'_ self) -> RwLockReadGuard<'_, Store> {
+        self.app_state.get_store().await
+    }
 
-        self
+    pub async fn write(mut self, event: Event) -> Self {
+        self.app_state = self
+            .app_state
+            .write(DateEvent {
+                date: self.date,
+                kind: event,
+            })
+            .await;
+        return self;
     }
 }

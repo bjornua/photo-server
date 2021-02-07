@@ -14,6 +14,7 @@ enum Input {
     SessionCreate(commands::session_create::Input),
     SessionGet(commands::session_get::Input),
     SessionList(commands::session_list::Input),
+    SessionPing(commands::session_ping::Input),
     UserGetFull(commands::user_get_full::Input),
 }
 
@@ -26,6 +27,7 @@ enum Output {
     SessionCreate(commands::session_create::Output),
     SessionGet(commands::session_get::Output),
     SessionList(commands::session_list::Output),
+    SessionPing(commands::session_ping::Output),
     UserGetFull(commands::user_get_full::Output),
 }
 
@@ -48,7 +50,7 @@ pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Respon
         }
     };
 
-    let state = req.state().clone();
+    let state = req.state().clone().into_request_state_current_time();
 
     let result: Output = match command_input {
         Input::Login(args) => Output::Login(commands::login::run(state, args).await),
@@ -64,6 +66,9 @@ pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Respon
         }
         Input::UserGetFull(args) => {
             Output::UserGetFull(commands::user_get_full::run(state, args).await)
+        }
+        Input::SessionPing(args) => {
+            Output::SessionPing(commands::session_ping::run(state, args).await)
         }
     };
 
