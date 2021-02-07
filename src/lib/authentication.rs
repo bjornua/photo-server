@@ -1,6 +1,6 @@
 use crate::app_state::{self, users::User};
 use crate::lib::id::ID;
-use app_state::{sessions::Session, AppState};
+use app_state::{sessions::Session, Store};
 use async_std::sync::{Arc, RwLock, Weak};
 
 use tide::http::Headers;
@@ -25,13 +25,13 @@ pub fn get_session_id<H: AsRef<Headers>>(headers: H) -> Option<ID> {
     return str.parse().ok();
 }
 
-pub fn get_authentication<H: AsRef<Headers>>(headers: H, app_state: &AppState) -> Authentication {
+pub fn get_authentication<H: AsRef<Headers>>(headers: H, store: &Store) -> Authentication {
     let session_id = match get_session_id(headers) {
         Some(id) => id,
         None => return Authentication::NotAuthenticated,
     };
 
-    let session_maybe: Option<&Session> = app_state.sessions.get(&session_id);
+    let session_maybe: Option<&Session> = store.sessions.get(&session_id);
 
     return match session_maybe {
         Some(s) => s.authentication.clone(),
@@ -39,8 +39,8 @@ pub fn get_authentication<H: AsRef<Headers>>(headers: H, app_state: &AppState) -
     };
 }
 
-pub fn get_user<H: AsRef<Headers>>(headers: H, app_state: &AppState) -> Option<Arc<RwLock<User>>> {
-    let auth = get_authentication(headers, app_state);
+pub fn get_user<H: AsRef<Headers>>(headers: H, store: &Store) -> Option<Arc<RwLock<User>>> {
+    let auth = get_authentication(headers, store);
 
     return match auth {
         Authentication::NotAuthenticated => None,

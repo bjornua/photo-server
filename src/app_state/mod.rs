@@ -31,7 +31,7 @@ impl Store {
                 session_id,
                 user_id,
             } => {
-                let user = self.users.get_by_id(&session_id).unwrap();
+                let user = self.users.get_by_id(&user_id).unwrap();
                 self.sessions.login(&session_id, Arc::downgrade(&user));
             }
             Event::SessionPing { session_id } => self.sessions.ping(&session_id, command.date),
@@ -59,6 +59,14 @@ impl Store {
 #[derive(Clone)]
 pub struct AppState {
     store: Arc<RwLock<Store>>,
+}
+
+impl AppState {
+    pub fn new() -> Self {
+        return Self {
+            store: Arc::new(RwLock::new(Store::new())),
+        };
+    }
 }
 
 impl AppState {

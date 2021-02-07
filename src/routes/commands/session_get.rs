@@ -24,10 +24,10 @@ pub enum Output {
     AccessDenied,
 }
 
-pub async fn run<'a>(state: &AppState, input: Input) -> Output {
-    let state = state.read().await;
+pub async fn run<'a>(state: AppState, input: Input) -> Output {
+    let store = state.get_store().await;
 
-    match state.session_get(&input.session_id) {
+    match store.sessions.get(&input.session_id) {
         Some(sessions::Session {
             authentication: Authentication::Authenticated { user },
             token: _,

@@ -1,10 +1,8 @@
-use std::borrow::Borrow;
-
 use crate::{
     app_state::{self, AppState},
-    lib::{authentication::Authentication, id::ID},
+    lib::id::ID,
 };
-use app_state::{event::Event, sessions::Session};
+use app_state::event::Event;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -41,10 +39,12 @@ pub async fn run<'a>(state: AppState, input: Input) -> Output {
 
     drop(store);
 
-    state.write(Event::SessionLogin {
-        session_id: input.session_id,
-        user_id: user.id.clone(),
-    });
+    state
+        .write(Event::SessionLogin {
+            session_id: input.session_id,
+            user_id: user.id.clone(),
+        })
+        .await;
 
     return Output::Success;
 }

@@ -26,15 +26,15 @@ pub enum Output {
     InvalidSessionID,
 }
 
-pub async fn run<'a>(state: &AppState, input: Input) -> Output {
-    let state = state.read().await;
+pub async fn run<'a>(state: AppState, input: Input) -> Output {
+    let store = state.get_store().await;
 
-    let authentication = match state.session_get(&input.session_id) {
+    let authentication = match store.sessions.get(&input.session_id) {
         Some(Session { authentication, .. }) => authentication,
         None => return Output::SessionNotFound,
     };
 
-    let target_user = match state.user_get(&input.user_id) {
+    let target_user = match store.users.get_by_id(&input.user_id) {
         Some(user) => user,
         None => return Output::UserNotFound,
     };

@@ -11,8 +11,14 @@ pub enum Output {
     Success { session_id: ID },
 }
 
-pub async fn run<'a>(state: &AppState, _input: Input) -> Output {
-    return Output::Success {
-        session_id: state.write().await.new_session().token.clone(),
-    };
+pub async fn run<'a>(state: AppState, _input: Input) -> Output {
+    let session_id = ID::new();
+
+    state
+        .write(crate::app_state::event::Event::SessionCreate {
+            session_id: session_id.clone(),
+        })
+        .await;
+
+    return Output::Success { session_id };
 }

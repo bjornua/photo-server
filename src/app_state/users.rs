@@ -5,7 +5,7 @@ use std::collections::{
 
 use async_std::sync::{Arc, RwLock, Weak};
 
-use crate::lib::{authentication::Authentication, id::ID};
+use crate::lib::id::ID;
 
 #[derive(Clone, Debug)]
 pub struct User {
@@ -40,7 +40,7 @@ impl Users {
         };
     }
 
-    pub fn insert(self, user: User) -> Result<Arc<RwLock<User>>, InsertionError> {
+    pub fn insert(&mut self, user: User) -> Result<Arc<RwLock<User>>, InsertionError> {
         let handle_entry = match self.by_handle.entry(user.handle.clone()) {
             Occupied(_) => {
                 return Err(InsertionError::HandleExists);

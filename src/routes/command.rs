@@ -48,7 +48,7 @@ pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Respon
         }
     };
 
-    let state = req.state();
+    let state = req.state().clone();
 
     let result: Output = match command_input {
         Input::Login(args) => Output::Login(commands::login::run(state, args).await),
