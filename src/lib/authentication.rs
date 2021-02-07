@@ -24,14 +24,14 @@ pub fn get_session_id<H: AsRef<Headers>>(headers: H) -> Option<ID> {
     let headers_ref = headers.as_ref();
 
     let value = headers_ref.get("Authorization")?.as_str();
-    let mut words = value.splitn(2, " ");
+    let mut words = value.splitn(2, ' ');
 
     if words.next()? != "Bearer" {
         return None;
     };
     let str = words.next()?;
 
-    return str.parse().ok();
+    str.parse().ok()
 }
 
 pub fn get_authentication<H: AsRef<Headers>>(headers: H, store: &Store) -> Authentication {
@@ -42,10 +42,10 @@ pub fn get_authentication<H: AsRef<Headers>>(headers: H, store: &Store) -> Authe
 
     let session_maybe: Option<&Session> = store.sessions.get(&session_id);
 
-    return match session_maybe {
+    match session_maybe {
         Some(s) => s.authentication.clone(),
         None => Authentication::NotAuthenticated,
-    };
+    }
 }
 
 pub async fn get_user<H: AsRef<Headers>>(headers: H, store: &Store) -> Option<Arc<RwLock<User>>> {

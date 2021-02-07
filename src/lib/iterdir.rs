@@ -13,11 +13,11 @@ pub enum IterDirError {
         cause: std::io::Error,
     },
     GetFileTypeError {
-        dir_entry: DirEntry,
-        cause: std::io::Error,
+        dir_entry: Box<DirEntry>,
+        cause: Box<std::io::Error>,
     },
     NotRegularFile {
-        dir_entry: DirEntry,
+        dir_entry: Box<DirEntry>,
     },
 }
 
@@ -78,11 +78,15 @@ impl Iterator for RecursiveIterDir {
                     continue;
                 }
                 Ok(file_type) if file_type.is_file() => return Some(Ok(dir_entry)),
-                Ok(_) => return Some(Err(IterDirError::NotRegularFile { dir_entry })),
+                Ok(_) => {
+                    return Some(Err(IterDirError::NotRegularFile {
+                        dir_entry: Box::new(dir_entry),
+                    }))
+                }
                 Err(e) => {
                     return Some(Err(IterDirError::GetFileTypeError {
-                        dir_entry,
-                        cause: e,
+                        dir_entry: Box::new(dir_entry),
+                        cause: Box::new(e),
                     }));
                 }
             }
@@ -93,7 +97,7 @@ impl Iterator for RecursiveIterDir {
 #[derive(Debug)]
 pub enum FindFilesError {
     WrongExtension { path: std::path::PathBuf },
-    IterDirError(IterDirError),
+    IterDirError(Box<IterDirError>),
 }
 
 pub fn findfiles_with_ext(
@@ -101,17 +105,16 @@ pub fn findfiles_with_ext(
 ) -> impl Iterator<Item = Result<std::path::PathBuf, FindFilesError>> {
     let files = RecursiveIterDir::new(directory);
 
-    let files = files.map(move |file| {
+    files.map(move |file| {
         let dir_entry = match file {
             Ok(direntry) => direntry,
-            Err(e) => return Err(FindFilesError::IterDirError(e)),
+            Err(e) => return Err(FindFilesError::IterDirError(Box::new(e))),
         };
         let path = dir_entry.path();
         if !path_matches_ext(&path) {
             return Err(FindFilesError::WrongExtension { path });
         };
 
-        return Ok(path);
-    });
-    files
+        Ok(path)
+    })
 }

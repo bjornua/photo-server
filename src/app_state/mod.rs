@@ -63,14 +63,14 @@ pub struct AppState {
 
 impl AppState {
     pub fn new() -> Self {
-        return Self {
+        Self {
             store: Arc::new(RwLock::new(Store::new())),
-        };
+        }
     }
 }
 
 impl AppState {
-    pub async fn get_store<'a>(&'a self) -> RwLockReadGuard<'a, Store> {
+    pub async fn get_store<'a>(&'_ self) -> RwLockReadGuard<'_, Store> {
         self.store.read().await
     }
 

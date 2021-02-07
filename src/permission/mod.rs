@@ -3,16 +3,13 @@ use async_std::sync::{Arc, RwLock};
 
 fn get_auth_user(auth: &Authentication) -> Option<Arc<RwLock<User>>> {
     match auth {
-        Authentication::NotAuthenticated => return None,
+        Authentication::NotAuthenticated => None,
         Authentication::Authenticated { user } => user.upgrade(),
     }
 }
 
 pub fn session_list(auth: &Authentication) -> bool {
-    return match get_auth_user(auth) {
-        Some(_) => true,
-        None => false,
-    };
+    get_auth_user(auth).is_some()
 }
 
 pub async fn user_read(auth: &Authentication, target_user: &User) -> bool {

@@ -71,7 +71,7 @@ impl Sessions {
     pub fn login(&mut self, session_id: &ID, user: Weak<RwLock<User>>) -> Option<&Session> {
         let session = self.inner.get_mut(session_id)?;
         session.authentication = Authentication::Authenticated { user };
-        return Some(&*session);
+        Some(&*session)
     }
 
     pub fn ping(&mut self, session_id: &ID, date: chrono::DateTime<chrono::Utc>) {

@@ -1,4 +1,4 @@
-const MATCH_EXTENSIONS: &'static [&'static str] = &["jpg", "JPG", "png", "PNG"];
+const MATCH_EXTENSIONS: &[&str] = &["jpg", "JPG", "png", "PNG"];
 
 fn str_matches_ext(a: &std::ffi::OsStr) -> bool {
     MATCH_EXTENSIONS
