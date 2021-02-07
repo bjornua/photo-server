@@ -38,7 +38,7 @@ impl Store {
             Event::SessionLogout { session_id } => self.sessions.logout(&session_id),
             Event::SessionCreate { session_id } => self.sessions.create(session_id, command.date),
             Event::UserCreate {
-                id,
+                user_id: id,
                 name,
                 handle,
                 password,
@@ -63,14 +63,14 @@ pub struct AppState {
 
 impl AppState {
     pub fn new() -> Self {
-        return Self {
+        Self {
             store: Arc::new(RwLock::new(Store::new())),
-        };
+        }
     }
 }
 
 impl AppState {
-    pub async fn get_store<'a>(&'a self) -> RwLockReadGuard<'a, Store> {
+    pub async fn get_store<'a>(&'_ self) -> RwLockReadGuard<'_, Store> {
         self.store.read().await
     }
 
@@ -80,8 +80,28 @@ impl AppState {
             date: chrono::Utc::now(),
             kind: undated_event,
         };
-        println!("Logging event: {:?}", event);
+        println!("{date}: {kind:?}", date = event.date, kind = event.kind);
         self.store.write().await.on_event(event);
+        self
+    }
+
+    pub async fn write_many<'a, T: IntoIterator<Item = &'a Event>>(
+        self,
+        undated_events: T,
+    ) -> Self {
+        let date = chrono::Utc::now();
+
+        let mut store = self.store.write().await;
+        for kind in undated_events.into_iter() {
+            let event = DateEvent {
+                date,
+                kind: kind.clone(),
+            };
+            println!("{date}: {kind:?}", date = event.date, kind = event.kind);
+            store.on_event(event);
+        }
+        drop(store);
+
         self
     }
 }

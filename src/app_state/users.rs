@@ -34,10 +34,10 @@ pub struct Users {
 
 impl Users {
     pub fn new() -> Self {
-        return Self {
+        Self {
             by_id: HashMap::new(),
             by_handle: HashMap::new(),
-        };
+        }
     }
 
     pub fn insert(&mut self, user: User) -> Result<Arc<RwLock<User>>, InsertionError> {
@@ -59,12 +59,12 @@ impl Users {
         handle_entry.insert(Arc::downgrade(&user));
         id_entry.insert(user.clone());
 
-        return Ok(user);
+        Ok(user)
     }
 
     pub fn get_by_handle(&self, handle: &str) -> Option<Arc<RwLock<User>>> {
         match self.by_handle.get(handle).map(Weak::upgrade) {
-            Some(s) => return s,
+            Some(s) => s,
             None => None,
         }
     }

@@ -43,9 +43,11 @@ pub async fn run<'a>(state: AppState, input: Input) -> Output {
         return Output::AccessDenied;
     };
 
+    let target_user = target_user.read().await;
+
     return Output::Success {
         id: input.user_id,
-        name: target_user.read().await.name.clone(),
-        handle: target_user.read().await.handle.clone(),
+        name: target_user.name.clone(),
+        handle: target_user.handle.clone(),
     };
 }

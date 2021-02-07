@@ -1,6 +1,4 @@
-use bs58;
 use rand::{thread_rng, Rng};
-use serde;
 use std::fmt;
 use std::str::FromStr;
 
@@ -46,13 +44,13 @@ impl FromStr for ID {
             return Err(IDDecodeError::WrongLength);
         }
 
-        return Ok(ID(buffer));
+        Ok(ID(buffer))
     }
 }
 
 impl serde::Serialize for ID {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        return serde::Serialize::serialize(&self.to_string(), serializer);
+        serde::Serialize::serialize(&self.to_string(), serializer)
     }
 }
 
@@ -60,10 +58,10 @@ impl<'de> serde::Deserialize<'de> for ID {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let s: String = String::deserialize(deserializer)?;
 
-        return match s.parse::<ID>() {
-            Ok(id) => return Ok(id),
+        match s.parse::<ID>() {
+            Ok(id) => Ok(id),
             Err(e) => Err(serde::de::Error::custom(e)),
-        };
+        }
     }
 }
 
