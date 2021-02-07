@@ -22,7 +22,7 @@ pub enum Event {
         password: String,
     },
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DateEvent {
     pub date: chrono::DateTime<chrono::Utc>,
     pub kind: Event,

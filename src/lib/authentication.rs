@@ -1,9 +1,8 @@
-use crate::app_state::{self, users::User};
-use crate::lib::id::ID;
-use app_state::{sessions::Session, Store};
+use crate::app_state::users::User;
+// use app_state::{sessions::Session, Store};
 use async_std::sync::{Arc, RwLock, Weak};
 
-use tide::http::Headers;
+// use tide::http::Headers;
 
 #[derive(Clone, Debug)]
 pub enum Authentication {
@@ -12,14 +11,15 @@ pub enum Authentication {
 }
 
 impl Authentication {
-    pub async fn get_user(&self) -> Option<Arc<RwLock<User>>> {
-        return match self {
+    pub fn get_user(&self) -> Option<Arc<RwLock<User>>> {
+        match self {
             Authentication::NotAuthenticated => None,
             Authentication::Authenticated { user } => user.upgrade(),
-        };
+        }
     }
 }
 
+/*
 pub fn get_session_id<H: AsRef<Headers>>(headers: H) -> Option<ID> {
     let headers_ref = headers.as_ref();
 
@@ -49,7 +49,7 @@ pub fn get_authentication<H: AsRef<Headers>>(headers: H, store: &Store) -> Authe
 }
 
 pub async fn get_user<H: AsRef<Headers>>(headers: H, store: &Store) -> Option<Arc<RwLock<User>>> {
-    return get_authentication(headers, store).get_user().await;
+    return get_authentication(headers, store).get_user();
 }
 
 #[cfg(test)]
@@ -70,3 +70,4 @@ mod tests {
         );
     }
 }
+*/

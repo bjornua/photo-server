@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{app_state::AppState, lib::id::ID};
+use crate::{app_state::RequestState, lib::id::ID};
 
 #[derive(Deserialize)]
 pub struct Input {}
@@ -11,7 +11,7 @@ pub enum Output {
     Success { session_id: ID },
 }
 
-pub async fn run<'a>(state: AppState, _input: Input) -> Output {
+pub async fn run<'a>(state: RequestState, _input: Input) -> Output {
     let session_id = ID::new();
 
     state

@@ -1,5 +1,5 @@
 use crate::{
-    app_state::{sessions::Session, AppState},
+    app_state::{sessions::Session, RequestState},
     lib::id::ID,
     permission,
 };
@@ -25,7 +25,7 @@ pub enum Output {
     InvalidSessionID,
 }
 
-pub async fn run(state: &AppState, input: Input) -> Output {
+pub async fn run(state: &RequestState, input: Input) -> Output {
     let state = state.get_store().await;
 
     let authentication = match state.sessions.get(&input.session_id) {

@@ -60,10 +60,6 @@ impl Sessions {
         self.inner.get(session_id)
     }
 
-    pub fn get_mut(&mut self, session_id: &ID) -> Option<&mut Session> {
-        self.inner.get_mut(session_id)
-    }
-
     pub fn list(&self) -> Vec<&Session> {
         self.inner.values().collect()
     }
