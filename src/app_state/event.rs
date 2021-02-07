@@ -1,6 +1,6 @@
 use crate::lib::id::ID;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Event {
     SessionLogin {
         session_id: ID,
@@ -16,7 +16,7 @@ pub enum Event {
         session_id: ID,
     },
     UserCreate {
-        id: ID,
+        user_id: ID,
         name: String,
         handle: String,
         password: String,

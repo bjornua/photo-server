@@ -11,6 +11,15 @@ pub enum Authentication {
     Authenticated { user: Weak<RwLock<User>> },
 }
 
+impl Authentication {
+    pub async fn get_user(&self) -> Option<Arc<RwLock<User>>> {
+        return match self {
+            Authentication::NotAuthenticated => None,
+            Authentication::Authenticated { user } => user.upgrade(),
+        };
+    }
+}
+
 pub fn get_session_id<H: AsRef<Headers>>(headers: H) -> Option<ID> {
     let headers_ref = headers.as_ref();
 
@@ -39,13 +48,8 @@ pub fn get_authentication<H: AsRef<Headers>>(headers: H, store: &Store) -> Authe
     };
 }
 
-pub fn get_user<H: AsRef<Headers>>(headers: H, store: &Store) -> Option<Arc<RwLock<User>>> {
-    let auth = get_authentication(headers, store);
-
-    return match auth {
-        Authentication::NotAuthenticated => None,
-        Authentication::Authenticated { user } => user.upgrade(),
-    };
+pub async fn get_user<H: AsRef<Headers>>(headers: H, store: &Store) -> Option<Arc<RwLock<User>>> {
+    return get_authentication(headers, store).get_user().await;
 }
 
 #[cfg(test)]
