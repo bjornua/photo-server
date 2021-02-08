@@ -1,3 +1,4 @@
 /target
 /pictures
 .DS_Store
+/lcov.info
