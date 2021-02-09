@@ -13,11 +13,20 @@ pub async fn user_read(auth: &Authentication, target_user: &User) -> bool {
     return *user.read().await == *target_user;
 }
 
-// pub async fn user_update(auth: &Authentication, target_user: &User) -> bool {
-//     let user = match auth.get_user() {
-//         Some(user) => user,
-//         None => return false,
-//     };
+pub async fn user_update(auth: &Authentication, target_user: &User) -> bool {
+    let user = match auth.get_user() {
+        Some(user) => user,
+        None => return false,
+    };
 
-//     return *user.read().await == *target_user;
-// }
+    return *user.read().await == *target_user;
+}
+
+pub async fn user_update_password(auth: &Authentication, target_user: &User) -> bool {
+    let user = match auth.get_user() {
+        Some(user) => user,
+        None => return false,
+    };
+
+    return *user.read().await == *target_user;
+}

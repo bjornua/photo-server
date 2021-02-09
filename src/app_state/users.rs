@@ -25,6 +25,10 @@ pub enum InsertionError {
     IDExists,
     HandleExists,
 }
+#[derive(Debug)]
+pub enum UpdateError {
+    IDNotFound,
+}
 
 #[derive(Clone, Debug)]
 pub struct Users {
@@ -71,5 +75,29 @@ impl Users {
 
     pub fn get_by_id(&self, user_id: &ID) -> Option<Arc<RwLock<User>>> {
         self.by_id.get(user_id).cloned()
+    }
+
+    pub async fn update(
+        &self,
+        user_id: &ID,
+        name: String,
+        handle: String,
+    ) -> Result<(), UpdateError> {
+        let user_locked = self.get_by_id(&user_id).ok_or(UpdateError::IDNotFound)?;
+
+        let mut user = user_locked.write().await;
+        user.name = name;
+        user.handle = handle;
+
+        Ok(())
+    }
+
+    pub async fn update_password(&self, user_id: ID, password: String) -> Result<(), UpdateError> {
+        let user_locked = self.get_by_id(&user_id).ok_or(UpdateError::IDNotFound)?;
+
+        let mut user = user_locked.write().await;
+        user.password = password;
+
+        Ok(())
     }
 }

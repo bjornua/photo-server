@@ -21,6 +21,15 @@ pub enum Event {
         handle: String,
         password: String,
     },
+    UserUpdate {
+        user_id: ID,
+        name: String,
+        handle: String,
+    },
+    UserUpdatePassword {
+        user_id: ID,
+        password: String,
+    },
 }
 #[derive(Debug, Clone)]
 pub struct DateEvent {

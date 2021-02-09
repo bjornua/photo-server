@@ -15,6 +15,7 @@ pub struct Input {
 pub struct Session {
     token: ID,
     auth_user: Option<ID>,
+    last_ping: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Serialize)]
@@ -31,18 +32,20 @@ pub async fn run<'a>(state: RequestState, input: Input) -> Output {
         Some(sessions::Session {
             authentication: Authentication::Authenticated { user },
             token: _,
-            last_seen: _,
+            last_ping: last_seen,
         }) => Output::Success(Session {
             token: input.session_id,
             auth_user: Some(user.upgrade().unwrap().read().await.id.clone()),
+            last_ping: *last_seen,
         }),
         Some(sessions::Session {
             authentication: Authentication::NotAuthenticated,
             token: _,
-            last_seen: _,
+            last_ping: last_seen,
         }) => Output::Success(Session {
             token: input.session_id,
             auth_user: None,
+            last_ping: *last_seen,
         }),
         None => return Output::AccessDenied,
     }

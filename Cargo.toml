@@ -35,7 +35,7 @@ features=['std', 'alloc']
 [dependencies.chrono]
 version = "0.4.19"
 default-features = false
-features=['clock']
+features=['clock', 'serde']
 
 [dependencies.serde]
 version = "1.0.123"

@@ -13,7 +13,7 @@ use super::users::User;
 #[derive(Clone, Debug)]
 pub struct Session {
     pub token: ID,
-    pub last_seen: chrono::DateTime<chrono::Utc>,
+    pub last_ping: chrono::DateTime<chrono::Utc>,
     pub authentication: Authentication,
 }
 
@@ -44,7 +44,7 @@ impl Sessions {
     pub fn create(&mut self, token: ID, date: chrono::DateTime<chrono::Utc>) {
         let session = Session {
             authentication: Authentication::NotAuthenticated,
-            last_seen: date,
+            last_ping: date,
             token,
         };
         let entry = self.inner.entry(session.token.clone());
@@ -72,7 +72,7 @@ impl Sessions {
 
     pub fn ping(&mut self, session_id: &ID, date: chrono::DateTime<chrono::Utc>) {
         let session = self.inner.get_mut(session_id).unwrap();
-        session.last_seen = date;
+        session.last_ping = date;
     }
 
     pub fn logout(&mut self, session_id: &ID) {
