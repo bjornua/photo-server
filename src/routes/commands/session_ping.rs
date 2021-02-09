@@ -87,7 +87,7 @@ mod tests {
                 .sessions
                 .get(&ID::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap())
                 .unwrap()
-                .last_seen,
+                .last_ping,
             Utc.ymd(1970, 1, 1).and_hms_milli(0, 10, 1, 123)
         );
     }

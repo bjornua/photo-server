@@ -16,6 +16,8 @@ enum Input {
     SessionList(commands::session_list::Input),
     SessionPing(commands::session_ping::Input),
     UserGetFull(commands::user_get_full::Input),
+    UserUpdate(commands::user_update::Input),
+    UserUpdatePassword(commands::user_update_password::Input),
 }
 
 #[derive(Serialize)]
@@ -29,6 +31,8 @@ enum Output {
     SessionList(commands::session_list::Output),
     SessionPing(commands::session_ping::Output),
     UserGetFull(commands::user_get_full::Output),
+    UserUpdate(commands::user_update::Output),
+    UserUpdatePassword(commands::user_update_password::Output),
 }
 
 pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Response>> {
@@ -69,6 +73,12 @@ pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Respon
         }
         Input::SessionPing(args) => {
             Output::SessionPing(commands::session_ping::run(state, args).await)
+        }
+        Input::UserUpdate(args) => {
+            Output::UserUpdate(commands::user_update::run(state, args).await)
+        }
+        Input::UserUpdatePassword(args) => {
+            Output::UserUpdatePassword(commands::user_update_password::run(state, args).await)
         }
     };
 

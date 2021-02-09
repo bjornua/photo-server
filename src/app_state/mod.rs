@@ -25,7 +25,7 @@ impl Store {
 }
 
 impl Store {
-    fn on_event(&mut self, command: DateEvent) {
+    async fn on_event(&mut self, command: DateEvent) {
         match command.kind {
             Event::SessionLogin {
                 session_id,
@@ -51,6 +51,16 @@ impl Store {
                         password,
                     })
                     .unwrap();
+            }
+            Event::UserUpdate {
+                user_id,
+                name,
+                handle,
+            } => {
+                self.users.update(&user_id, name, handle).await.unwrap();
+            }
+            Event::UserUpdatePassword { user_id, password } => {
+                self.users.update_password(user_id, password).await.unwrap();
             }
         }
     }
@@ -86,7 +96,7 @@ impl AppState {
     // We take and return the value here to discourage deadlocks
     pub async fn write(self, event: DateEvent) -> Self {
         println!("{date}: {kind:?}", date = event.date, kind = event.kind);
-        self.store.write().await.on_event(event);
+        self.store.write().await.on_event(event).await;
         self
     }
 }

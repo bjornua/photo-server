@@ -9,8 +9,7 @@ use serde::{Deserialize, Serialize};
 pub struct Input {
     pub session_id: ID,
     pub user_id: ID,
-    pub name: String,
-    pub handle: String,
+    pub password: String,
 }
 
 #[derive(Serialize)]
@@ -35,17 +34,16 @@ pub async fn run<'a>(state: RequestState, input: Input) -> Output {
         None => return Output::UserNotFound,
     };
 
-    if !permission::user_update(authentication, &*target_user.read().await).await {
+    if !permission::user_update_password(authentication, &*target_user.read().await).await {
         return Output::AccessDenied;
     };
 
     drop(store);
 
     state
-        .write(crate::app_state::event::Event::UserUpdate {
+        .write(crate::app_state::event::Event::UserUpdatePassword {
             user_id: input.user_id,
-            handle: input.handle,
-            name: input.name,
+            password: input.password,
         })
         .await;
 
