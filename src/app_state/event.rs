@@ -30,6 +30,12 @@ pub enum Event {
         user_id: ID,
         password: String,
     },
+    UploadStarted {
+        upload_id: ID,
+    },
+    UploadFinished {
+        upload_id: ID,
+    },
 }
 #[derive(Debug, Clone)]
 pub struct DateEvent {
