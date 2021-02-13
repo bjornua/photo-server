@@ -9,22 +9,32 @@ use users::User;
 
 use crate::app_state::event::DateEvent;
 
+trait Logger {
+    fn test() -> () {}
+}
+
+struct FileLogger {}
+
+impl Logger for FileLogger {}
+
+struct NullLogger {}
+
+impl Logger for FileLogger {}
+
 #[derive(Clone, Debug)]
 pub struct Store {
     pub users: users::Users,
     pub sessions: sessions::Sessions,
 }
 
-impl Store {
+impl<L: Logger> Store<L> {
     pub fn new() -> Self {
         Self {
             sessions: sessions::Sessions::new(),
             users: users::Users::new(),
         }
     }
-}
 
-impl Store {
     async fn on_event(&mut self, command: DateEvent) {
         match command.kind {
             Event::SessionLogin {
@@ -67,14 +77,16 @@ impl Store {
 }
 
 #[derive(Clone)]
-pub struct AppState {
+pub struct AppState<L: Logger> {
     store: Arc<RwLock<Store>>,
+    logger: L,
 }
 
-impl AppState {
-    pub fn new() -> Self {
+impl<L> AppState<L> {
+    pub fn new(logger: L) -> Self {
         Self {
             store: Arc::new(RwLock::new(Store::new())),
+            logger,
         }
     }
 
@@ -123,3 +135,14 @@ impl RequestState {
         return self;
     }
 }
+
+/*
+    server
+        create store
+        replay log
+
+        run server
+            command
+                append to log
+                run command
+*/
