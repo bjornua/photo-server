@@ -30,11 +30,9 @@ pub enum Event {
         user_id: ID,
         password: String,
     },
-    UploadStarted {
-        upload_id: ID,
-    },
-    UploadFinished {
-        upload_id: ID,
+    SetAvatar {
+        user_id: ID,
+        file_id: ID,
     },
 }
 #[derive(Debug, Clone)]
