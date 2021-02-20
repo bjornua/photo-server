@@ -3,23 +3,44 @@ pub mod sessions;
 pub mod store;
 pub mod users;
 
-use async_std::sync::{Arc, RwLock, RwLockReadGuard};
+use async_std::{
+    fs::OpenOptions,
+    io::prelude::WriteExt,
+    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
+};
 use event::Event;
 use users::User;
 
 use crate::app_state::event::DateEvent;
 
 trait Logger {
-    fn test() -> () {}
+    // fn append(event: DateEvent) -> Result<(), async_std::io::Error> {}
+
+    // fn get() {}
 }
 
-struct FileLogger {}
+pub struct FileLogger {
+    file: async_std::fs::File,
+}
 
-impl Logger for FileLogger {}
+impl FileLogger {
+    pub async fn new(path: &async_std::path::Path) -> Self {
+        let file = OpenOptions::new().write(true).open(path).await.unwrap();
+        return Self { file };
+    }
+
+    pub async fn append(&mut self, event: &DateEvent) {
+        let serialized = serde_json::to_string(event).unwrap();
+        dbg!(&serialized);
+        self.file.write_all(serialized.as_bytes()).await.unwrap();
+        self.file.write_all("\n".as_bytes()).await.unwrap();
+        self.file.sync_all().await.unwrap();
+    }
+}
 
 struct NullLogger {}
 
-impl Logger for FileLogger {}
+impl Logger for NullLogger {}
 
 #[derive(Clone, Debug)]
 pub struct Store {
@@ -27,7 +48,7 @@ pub struct Store {
     pub sessions: sessions::Sessions,
 }
 
-impl<L: Logger> Store<L> {
+impl Store {
     pub fn new() -> Self {
         Self {
             sessions: sessions::Sessions::new(),
@@ -77,16 +98,16 @@ impl<L: Logger> Store<L> {
 }
 
 #[derive(Clone)]
-pub struct AppState<L: Logger> {
+pub struct AppState {
     store: Arc<RwLock<Store>>,
-    logger: L,
+    logger: Arc<Mutex<FileLogger>>,
 }
 
-impl<L> AppState<L> {
-    pub fn new(logger: L) -> Self {
+impl AppState {
+    pub fn new(logger: FileLogger) -> Self {
         Self {
             store: Arc::new(RwLock::new(Store::new())),
-            logger,
+            logger: Arc::new(Mutex::new(logger)),
         }
     }
 
@@ -108,6 +129,7 @@ impl<L> AppState<L> {
     // We take and return the value here to discourage deadlocks
     pub async fn write(self, event: DateEvent) -> Self {
         println!("{date}: {kind:?}", date = event.date, kind = event.kind);
+        self.logger.lock().await.append(&event).await;
         self.store.write().await.on_event(event).await;
         self
     }

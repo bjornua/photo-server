@@ -1,6 +1,6 @@
 use crate::lib::id::ID;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum Event {
     SessionLogin {
         session_id: ID,
@@ -31,7 +31,7 @@ pub enum Event {
         password: String,
     },
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DateEvent {
     pub date: chrono::DateTime<chrono::Utc>,
     pub kind: Event,
