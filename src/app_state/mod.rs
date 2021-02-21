@@ -5,7 +5,10 @@ pub mod users;
 
 use async_std::{
     fs::OpenOptions,
-    io::prelude::WriteExt,
+    io::{
+        prelude::{BufReadExt, WriteExt},
+        BufReader,
+    },
     sync::{Arc, Mutex, RwLock, RwLockReadGuard},
 };
 use event::Event;
@@ -13,34 +16,53 @@ use users::User;
 
 use crate::app_state::event::DateEvent;
 
-trait Logger {
-    // fn append(event: DateEvent) -> Result<(), async_std::io::Error> {}
-
-    // fn get() {}
-}
-
-pub struct FileLogger {
+pub struct FileLogWriter {
     file: async_std::fs::File,
 }
 
-impl FileLogger {
+impl FileLogWriter {
     pub async fn new(path: &async_std::path::Path) -> Self {
-        let file = OpenOptions::new().write(true).open(path).await.unwrap();
+        let file = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open(path)
+            .await
+            .unwrap();
         return Self { file };
     }
 
     pub async fn append(&mut self, event: &DateEvent) {
         let serialized = serde_json::to_string(event).unwrap();
         dbg!(&serialized);
+
         self.file.write_all(serialized.as_bytes()).await.unwrap();
         self.file.write_all("\n".as_bytes()).await.unwrap();
         self.file.sync_all().await.unwrap();
     }
 }
 
-struct NullLogger {}
+pub struct FileLogReader {
+    reader: async_std::io::BufReader<async_std::fs::File>,
+    buffer: String,
+}
 
-impl Logger for NullLogger {}
+impl FileLogReader {
+    pub async fn new(path: &async_std::path::Path) -> Self {
+        let file = OpenOptions::new().read(true).open(path).await.unwrap();
+        let reader = BufReader::new(file);
+        let buffer = String::new();
+        Self { reader, buffer }
+    }
+
+    pub async fn get(&mut self) -> DateEvent {
+        self.reader.read_line(&mut self.buffer).await.unwrap();
+
+        dbg!(&self.buffer);
+        let command = serde_json::from_str(&self.buffer).unwrap();
+        self.buffer.clear();
+        command
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct Store {
@@ -100,11 +122,11 @@ impl Store {
 #[derive(Clone)]
 pub struct AppState {
     store: Arc<RwLock<Store>>,
-    logger: Arc<Mutex<FileLogger>>,
+    logger: Arc<Mutex<FileLogWriter>>,
 }
 
 impl AppState {
-    pub fn new(logger: FileLogger) -> Self {
+    pub fn new(logger: FileLogWriter) -> Self {
         Self {
             store: Arc::new(RwLock::new(Store::new())),
             logger: Arc::new(Mutex::new(logger)),
@@ -127,11 +149,24 @@ impl AppState {
     }
 
     // We take and return the value here to discourage deadlocks
-    pub async fn write(self, event: DateEvent) -> Self {
+    pub async fn write_unlogged(self, event: DateEvent) -> Self {
         println!("{date}: {kind:?}", date = event.date, kind = event.kind);
-        self.logger.lock().await.append(&event).await;
         self.store.write().await.on_event(event).await;
         self
+    }
+
+    // We take and return the value here to discourage deadlocks
+    pub async fn write(self, event: DateEvent) -> Self {
+        self.logger.lock().await.append(&event).await;
+        self.write_unlogged(event).await
+    }
+
+    // We take and return the value here to discourage deadlocks
+    pub async fn replay(mut self, mut reader: FileLogReader) -> Self {
+        loop {
+            let test = reader.get().await;
+            self = self.write_unlogged(test).await;
+        }
     }
 }
 
@@ -157,14 +192,3 @@ impl RequestState {
         return self;
     }
 }
-
-/*
-    server
-        create store
-        replay log
-
-        run server
-            command
-                append to log
-                run command
-*/

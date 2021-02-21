@@ -2,20 +2,25 @@ use std::convert::TryFrom;
 
 use async_std::path::PathBuf;
 
-use crate::{app_state::AppState, lib::id::ID};
 use crate::{
     app_state::{
         event::{DateEvent, Event},
-        FileLogger,
+        FileLogWriter,
     },
     routes,
+};
+use crate::{
+    app_state::{AppState, FileLogReader},
+    lib::id::ID,
 };
 
 const LOG_FILE: &str = "thelog.log";
 
 pub async fn run(socket: std::net::SocketAddr) -> tide::Result<()> {
-    let logger: FileLogger = FileLogger::new(&PathBuf::try_from(LOG_FILE).unwrap()).await;
-    let state: AppState = AppState::new(logger);
+    let log_writer = FileLogWriter::new(&PathBuf::try_from(LOG_FILE).unwrap()).await;
+    let log_reader = FileLogReader::new(&PathBuf::try_from(LOG_FILE).unwrap()).await;
+    let mut state: AppState = AppState::new(log_writer);
+    state = state.replay(log_reader).await;
     let state = state
         .write(DateEvent {
             date: chrono::Utc::now(),
