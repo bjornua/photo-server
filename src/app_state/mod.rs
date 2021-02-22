@@ -54,13 +54,15 @@ impl FileLogReader {
         Self { reader, buffer }
     }
 
-    pub async fn get(&mut self) -> DateEvent {
+    pub async fn next(&mut self) -> Option<DateEvent> {
         self.reader.read_line(&mut self.buffer).await.unwrap();
 
-        dbg!(&self.buffer);
+        if self.buffer.len() == 0 {
+            return None;
+        }
         let command = serde_json::from_str(&self.buffer).unwrap();
         self.buffer.clear();
-        command
+        Some(command)
     }
 }
 
@@ -163,10 +165,10 @@ impl AppState {
 
     // We take and return the value here to discourage deadlocks
     pub async fn replay(mut self, mut reader: FileLogReader) -> Self {
-        loop {
-            let test = reader.get().await;
+        while let Some(test) = reader.next().await {
             self = self.write_unlogged(test).await;
         }
+        self
     }
 }
 
