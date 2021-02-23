@@ -1,70 +1,14 @@
 pub mod event;
+pub mod log;
 pub mod sessions;
 pub mod store;
 pub mod users;
 
-use async_std::{
-    fs::OpenOptions,
-    io::{
-        prelude::{BufReadExt, WriteExt},
-        BufReader,
-    },
-    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
-};
+use async_std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 use event::Event;
 use users::User;
 
 use crate::app_state::event::DateEvent;
-
-pub struct FileLogWriter {
-    file: async_std::fs::File,
-}
-
-impl FileLogWriter {
-    pub async fn new(path: &async_std::path::Path) -> Self {
-        let file = OpenOptions::new()
-            .write(true)
-            .append(true)
-            .open(path)
-            .await
-            .unwrap();
-        return Self { file };
-    }
-
-    pub async fn append(&mut self, event: &DateEvent) {
-        let serialized = serde_json::to_string(event).unwrap();
-        dbg!(&serialized);
-
-        self.file.write_all(serialized.as_bytes()).await.unwrap();
-        self.file.write_all("\n".as_bytes()).await.unwrap();
-        self.file.sync_all().await.unwrap();
-    }
-}
-
-pub struct FileLogReader {
-    reader: async_std::io::BufReader<async_std::fs::File>,
-    buffer: String,
-}
-
-impl FileLogReader {
-    pub async fn new(path: &async_std::path::Path) -> Self {
-        let file = OpenOptions::new().read(true).open(path).await.unwrap();
-        let reader = BufReader::new(file);
-        let buffer = String::new();
-        Self { reader, buffer }
-    }
-
-    pub async fn next(&mut self) -> Option<DateEvent> {
-        self.reader.read_line(&mut self.buffer).await.unwrap();
-
-        if self.buffer.len() == 0 {
-            return None;
-        }
-        let command = serde_json::from_str(&self.buffer).unwrap();
-        self.buffer.clear();
-        Some(command)
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct Store {
@@ -124,11 +68,11 @@ impl Store {
 #[derive(Clone)]
 pub struct AppState {
     store: Arc<RwLock<Store>>,
-    logger: Arc<Mutex<FileLogWriter>>,
+    logger: Arc<Mutex<log::file::Writer>>,
 }
 
 impl AppState {
-    pub fn new(logger: FileLogWriter) -> Self {
+    pub fn new(logger: log::file::Writer) -> Self {
         Self {
             store: Arc::new(RwLock::new(Store::new())),
             logger: Arc::new(Mutex::new(logger)),
@@ -164,7 +108,7 @@ impl AppState {
     }
 
     // We take and return the value here to discourage deadlocks
-    pub async fn replay(mut self, mut reader: FileLogReader) -> Self {
+    pub async fn replay(mut self, mut reader: log::file::Reader) -> Self {
         while let Some(test) = reader.next().await {
             self = self.write_unlogged(test).await;
         }
