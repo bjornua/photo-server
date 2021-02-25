@@ -908,6 +908,7 @@ version = "0.1.0"
 dependencies = [
  "argh",
  "async-std",
+ "async-trait",
  "bs58",
  "chrono",
  "futures-channel",

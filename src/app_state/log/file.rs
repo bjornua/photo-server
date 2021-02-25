@@ -1,7 +1,4 @@
-use std::task::Poll;
-
 use crate::app_state::{event::DateEvent, log};
-use async_std::future::Future;
 use async_std::{
     fs::OpenOptions,
     io::{
@@ -25,16 +22,15 @@ impl Writer {
     }
 }
 
+#[async_trait::async_trait]
 impl log::Writer for Writer {
-    fn write(&mut self, event: &DateEvent) -> Box<dyn Future<Output = ()>> {
+    async fn write(&mut self, event: &DateEvent) {
         let serialized = serde_json::to_string(event).unwrap();
         dbg!(&serialized);
 
-        return async {
-            self.file.write_all(serialized.as_bytes()).await.unwrap();
-            self.file.write_all("\n".as_bytes()).await.unwrap();
-            self.file.sync_all().await.unwrap();
-        };
+        self.file.write_all(serialized.as_bytes()).await.unwrap();
+        self.file.write_all("\n".as_bytes()).await.unwrap();
+        self.file.sync_all().await.unwrap();
     }
 }
 

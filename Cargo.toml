@@ -12,6 +12,9 @@ lto = true
 panic="abort"
 codegen-units = 1
 
+[dependencies]
+async-trait = "0.1.42"
+
 [dependencies.futures-channel]
 version = "0.3.12"
 default-features = false

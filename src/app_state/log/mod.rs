@@ -1,9 +1,9 @@
-use std::future::Future;
-
 use crate::app_state::event::DateEvent;
+use async_trait::async_trait;
 
 pub mod file;
 
+#[async_trait]
 trait Writer {
-    fn write(&mut self, event: &DateEvent) -> Box<dyn Future<Output = ()>>;
+    async fn write(&mut self, event: &DateEvent) -> ();
 }
