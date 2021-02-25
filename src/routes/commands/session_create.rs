@@ -11,7 +11,7 @@ pub enum Output {
     Success { session_id: ID },
 }
 
-pub async fn run<'a>(state: RequestState, _input: Input) -> Output {
+pub async fn run<'a, T>(state: RequestState<T>, _input: Input) -> Output {
     let session_id = ID::new();
 
     state

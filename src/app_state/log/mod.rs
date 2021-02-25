@@ -4,6 +4,6 @@ use async_trait::async_trait;
 pub mod file;
 
 #[async_trait]
-trait Writer {
+pub trait Writer {
     async fn write(&mut self, event: &DateEvent) -> ();
 }

@@ -4,6 +4,8 @@ pub mod sessions;
 pub mod store;
 pub mod users;
 
+use std::ops::Deref;
+
 use async_std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 use event::Event;
 use users::User;
@@ -66,27 +68,27 @@ impl Store {
 }
 
 #[derive(Clone)]
-pub struct AppState {
+pub struct AppState<L: log::Writer> {
     store: Arc<RwLock<Store>>,
     logger: Arc<Mutex<log::file::Writer>>,
 }
 
-impl AppState {
-    pub fn new(logger: log::file::Writer) -> Self {
+impl<L: log::Writer> AppState<L> {
+    pub fn new(logger: L) -> Self {
         Self {
             store: Arc::new(RwLock::new(Store::new())),
             logger: Arc::new(Mutex::new(logger)),
         }
     }
 
-    pub fn into_request_state(self, date: chrono::DateTime<chrono::Utc>) -> RequestState {
+    pub fn into_request_state(self, date: chrono::DateTime<chrono::Utc>) -> RequestState<L> {
         RequestState {
             app_state: self,
             date,
         }
     }
 
-    pub fn into_request_state_current_time(self) -> RequestState {
+    pub fn into_request_state_current_time(self) -> RequestState<L> {
         self.into_request_state(chrono::Utc::now())
     }
 
@@ -103,7 +105,7 @@ impl AppState {
 
     // We take and return the value here to discourage deadlocks
     pub async fn write(self, event: DateEvent) -> Self {
-        self.logger.lock().await.append(&event).await;
+        self.logger.lock().await.write(&event).await;
         self.write_unlogged(event).await
     }
 
@@ -117,12 +119,12 @@ impl AppState {
 }
 
 #[derive(Clone)]
-pub struct RequestState {
-    app_state: AppState,
+pub struct RequestState<L: log::Writer> {
+    app_state: AppState<L>,
     date: chrono::DateTime<chrono::Utc>,
 }
 
-impl RequestState {
+impl<L: log::Writer> RequestState<L> {
     pub async fn get_store<'a>(&'_ self) -> RwLockReadGuard<'_, Store> {
         self.app_state.get_store().await
     }

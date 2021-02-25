@@ -24,7 +24,7 @@ pub enum Output {
     AccessDenied,
 }
 
-pub async fn run<'a>(state: RequestState, input: Input) -> Output {
+pub async fn run<'a, T>(state: RequestState<T>, input: Input) -> Output {
     let store = state.get_store().await;
 
     let authentication = match store.sessions.get(&input.session_id) {

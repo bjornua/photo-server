@@ -35,7 +35,7 @@ enum Output {
     UserUpdatePassword(commands::user_update_password::Output),
 }
 
-pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Response>> {
+pub async fn handle<T>(mut req: Request<AppState<T>>) -> tide::Result<impl Into<Response>> {
     let command_input: Input = match req.take_body().into_json().await {
         Ok(input) => input,
         Err(err) => {
