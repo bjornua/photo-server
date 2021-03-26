@@ -10,7 +10,7 @@ use crate::{
     routes,
 };
 
-use crate::{app_state::AppState, lib::id::ID};
+use crate::{app_state::AppState, lib::id::Id};
 
 const LOG_FILE: &str = "thelog.log";
 
@@ -32,7 +32,7 @@ pub async fn run(socket: std::net::SocketAddr) -> tide::Result<()> {
             .write(DateEvent {
                 date: chrono::Utc::now(),
                 kind: Event::UserCreate {
-                    user_id: ID::new(),
+                    user_id: Id::new(),
                     name: "Admin User".to_string(),
                     handle: "admin".to_string(),
                     password: "admin".to_string(),

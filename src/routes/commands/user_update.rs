@@ -1,14 +1,14 @@
 use crate::{
     app_state::{log::Writer, sessions::Session, RequestState},
-    lib::id::ID,
+    lib::id::Id,
     permission,
 };
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 pub struct Input {
-    pub session_id: ID,
-    pub user_id: ID,
+    pub session_id: Id,
+    pub user_id: Id,
     pub name: String,
     pub handle: String,
 }

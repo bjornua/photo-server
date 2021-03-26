@@ -3,18 +3,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     app_state::{self, log::Writer, RequestState},
-    lib::id::ID,
+    lib::id::Id,
     permission,
 };
 
 #[derive(Deserialize)]
 pub struct Input {
-    pub session_id: ID,
+    pub session_id: Id,
 }
 
 #[derive(Serialize)]
 pub struct Session {
-    token: ID,
+    token: Id,
     auth_user: Option<String>,
 }
 

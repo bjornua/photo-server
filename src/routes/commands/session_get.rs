@@ -3,18 +3,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     app_state::{self, log::Writer, RequestState},
-    lib::{authentication::Authentication, id::ID},
+    lib::{authentication::Authentication, id::Id},
 };
 
 #[derive(Deserialize)]
 pub struct Input {
-    pub session_id: ID,
+    pub session_id: Id,
 }
 
 #[derive(Serialize)]
 pub struct Session {
-    token: ID,
-    auth_user: Option<ID>,
+    token: Id,
+    auth_user: Option<Id>,
     last_ping: chrono::DateTime<chrono::Utc>,
 }
 
