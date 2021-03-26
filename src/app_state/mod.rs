@@ -4,8 +4,6 @@ pub mod sessions;
 pub mod store;
 pub mod users;
 
-use std::ops::Deref;
-
 use async_std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 use event::Event;
 use users::User;
@@ -67,10 +65,18 @@ impl Store {
     }
 }
 
-#[derive(Clone)]
 pub struct AppState<L: log::Writer> {
     store: Arc<RwLock<Store>>,
-    logger: Arc<Mutex<log::file::Writer>>,
+    logger: Arc<Mutex<L>>,
+}
+
+impl<L: log::Writer> Clone for AppState<L> {
+    fn clone(&self) -> Self {
+        Self {
+            store: self.store.clone(),
+            logger: self.logger.clone(),
+        }
+    }
 }
 
 impl<L: log::Writer> AppState<L> {

@@ -6,10 +6,10 @@ use async_std::{
         BufReader,
     },
 };
-
 pub struct Writer {
     file: async_std::fs::File,
 }
+
 impl Writer {
     pub async fn new(path: &async_std::path::Path) -> Self {
         let file = OpenOptions::new()

@@ -1,4 +1,4 @@
-use crate::routes::commands;
+use crate::{app_state::log::Writer, routes::commands};
 
 use crate::app_state::AppState;
 
@@ -35,7 +35,7 @@ enum Output {
     UserUpdatePassword(commands::user_update_password::Output),
 }
 
-pub async fn handle<T>(mut req: Request<AppState<T>>) -> tide::Result<impl Into<Response>> {
+pub async fn handle<T: Writer>(mut req: Request<AppState<T>>) -> tide::Result<impl Into<Response>> {
     let command_input: Input = match req.take_body().into_json().await {
         Ok(input) => input,
         Err(err) => {
@@ -54,7 +54,8 @@ pub async fn handle<T>(mut req: Request<AppState<T>>) -> tide::Result<impl Into<
         }
     };
 
-    let state = req.state().clone().into_request_state_current_time();
+    let state = req.state();
+    let state = state.clone().into_request_state_current_time();
 
     let result: Output = match command_input {
         Input::Login(args) => Output::Login(commands::login::run(state, args).await),

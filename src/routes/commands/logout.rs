@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app_state::{event::Event, RequestState},
+    app_state::{event::Event, log::Writer, RequestState},
     lib::id::ID,
 };
 
@@ -17,7 +17,7 @@ pub enum Output {
     SessionNotFound,
 }
 
-pub async fn run<'a, T>(state: RequestState<T>, input: Input) -> Output {
+pub async fn run<'a, T: Writer>(state: RequestState<T>, input: Input) -> Output {
     let store = state.get_store().await;
 
     if store.sessions.get(&input.session_id).is_none() {

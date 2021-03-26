@@ -1,5 +1,5 @@
 use crate::{
-    app_state::{sessions::Session, RequestState},
+    app_state::{log::Writer, sessions::Session, RequestState},
     lib::id::ID,
     permission,
 };
@@ -21,7 +21,7 @@ pub enum Output {
     AccessDenied,
 }
 
-pub async fn run<'a, T>(state: RequestState<T>, input: Input) -> Output {
+pub async fn run<'a, T: Writer>(state: RequestState<T>, input: Input) -> Output {
     let store = state.get_store().await;
 
     let authentication = match store.sessions.get(&input.session_id) {

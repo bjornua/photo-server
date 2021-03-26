@@ -18,7 +18,7 @@ pub async fn run(socket: std::net::SocketAddr) -> tide::Result<()> {
     let log_writer =
         crate::app_state::log::file::Writer::new(&PathBuf::try_from(LOG_FILE).unwrap()).await;
     let log_reader = log::file::Reader::new(&PathBuf::try_from(LOG_FILE).unwrap()).await;
-    let mut state: AppState = AppState::new(log_writer);
+    let mut state = AppState::new(log_writer);
     state = state.replay(log_reader).await;
 
     if state
