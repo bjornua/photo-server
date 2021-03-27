@@ -72,12 +72,12 @@ pub struct RequestState<L: log::Writer> {
     date: chrono::DateTime<chrono::Utc>,
 }
 
-impl<L: log::Writer> RequestState<L> {
-    pub async fn get_store<'a>(&'_ self) -> RwLockReadGuard<'_, store::Store> {
+trait RequestState {
+    async fn get_store<'a>(&'_ self) -> RwLockReadGuard<'_, store::Store> {
         self.app_state.get_store().await
     }
 
-    pub async fn write(mut self, event: Event) -> Self {
+    async fn write(mut self, event: Event) -> Self {
         self.app_state = self
             .app_state
             .write(DateEvent {
