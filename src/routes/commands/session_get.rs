@@ -1,4 +1,4 @@
-use app_state::sessions;
+use app_state::store::sessions;
 use serde::{Deserialize, Serialize};
 
 use crate::{

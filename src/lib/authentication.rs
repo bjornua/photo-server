@@ -1,4 +1,4 @@
-use crate::app_state::users::User;
+use crate::app_state::store::users::User;
 // use app_state::{sessions::Session, Store};
 use async_std::sync::{Arc, RwLock, Weak};
 
