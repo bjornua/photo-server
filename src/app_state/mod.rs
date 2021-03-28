@@ -65,9 +65,15 @@ impl<L: log::Writer> AppState<L> {
     }
 }
 
+#[derive(Clone)]
 pub struct AppRequestStore<L: log::Writer> {
     app_state: AppState<L>,
     date: chrono::DateTime<chrono::Utc>,
+}
+
+#[cfg(test)]
+pub fn make_test_state() -> AppRequestStore<log::null::Writer> {
+    AppState::new(log::null::Writer {}).into_request_state_current_time()
 }
 
 #[async_trait::async_trait]
