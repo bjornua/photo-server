@@ -29,15 +29,15 @@ impl<L: log::Writer> AppState<L> {
         }
     }
 
-    pub fn into_request_state(self, date: chrono::DateTime<chrono::Utc>) -> RequestState<L> {
-        RequestState {
+    pub fn into_app_request(self, date: chrono::DateTime<chrono::Utc>) -> AppRequestStore<L> {
+        AppRequestStore {
             app_state: self,
             date,
         }
     }
 
-    pub fn into_request_state_current_time(self) -> RequestState<L> {
-        self.into_request_state(chrono::Utc::now())
+    pub fn into_request_state_current_time(self) -> AppRequestStore<L> {
+        self.into_app_request(chrono::Utc::now())
     }
 
     pub async fn get_store<'a>(&'_ self) -> RwLockReadGuard<'_, store::Store> {
@@ -51,7 +51,6 @@ impl<L: log::Writer> AppState<L> {
         self
     }
 
-    // We take and return the value here to discourage deadlocks
     pub async fn write(self, event: DateEvent) -> Self {
         self.logger.lock().await.write(&event).await;
         self.write_unlogged(event).await
@@ -66,13 +65,19 @@ impl<L: log::Writer> AppState<L> {
     }
 }
 
-#[derive(Clone)]
-pub struct RequestState<L: log::Writer> {
+pub struct AppRequestStore<L: log::Writer> {
     app_state: AppState<L>,
     date: chrono::DateTime<chrono::Utc>,
 }
 
-trait RequestState {
+#[async_trait::async_trait]
+pub trait AppRequest {
+    async fn get_store<'a>(&'_ self) -> RwLockReadGuard<'_, store::Store>;
+    async fn write(mut self, event: Event) -> Self;
+}
+
+#[async_trait::async_trait]
+impl<L: log::Writer> AppRequest for AppRequestStore<L> {
     async fn get_store<'a>(&'_ self) -> RwLockReadGuard<'_, store::Store> {
         self.app_state.get_store().await
     }

@@ -1,5 +1,5 @@
 use crate::{
-    app_state::{self, log::Writer, RequestState},
+    app_state::{self, AppRequest},
     lib::id::Id,
 };
 use app_state::event::Event;
@@ -17,7 +17,7 @@ pub enum Output {
     SessionNotFound,
 }
 
-pub async fn run<'a, T: Writer>(state: RequestState<T>, input: Input) -> Output {
+pub async fn run(state: impl AppRequest, input: Input) -> Output {
     let store = state.get_store().await;
 
     if store.sessions.get(&input.session_id).is_none() {

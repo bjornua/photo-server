@@ -2,7 +2,7 @@ use app_state::store::sessions;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app_state::{self, log::Writer, RequestState},
+    app_state::{self, AppRequest},
     lib::{authentication::Authentication, id::Id},
 };
 
@@ -25,7 +25,7 @@ pub enum Output {
     AccessDenied,
 }
 
-pub async fn run<'a, T: Writer>(state: RequestState<T>, input: Input) -> Output {
+pub async fn run(state: impl AppRequest, input: Input) -> Output {
     let store = state.get_store().await;
 
     match store.sessions.get(&input.session_id) {
