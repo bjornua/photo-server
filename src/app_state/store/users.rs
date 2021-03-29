@@ -5,11 +5,11 @@ use std::collections::{
 
 use async_std::sync::{Arc, RwLock, Weak};
 
-use crate::lib::id::ID;
+use crate::lib::id::Id;
 
 #[derive(Clone, Debug)]
 pub struct User {
-    pub id: ID,
+    pub id: Id,
     pub name: String,
     pub handle: String,
     pub password: String,
@@ -22,17 +22,17 @@ impl PartialEq for User {
 
 #[derive(Debug)]
 pub enum InsertionError {
-    IDExists,
+    IdExists,
     HandleExists,
 }
 #[derive(Debug)]
 pub enum UpdateError {
-    IDNotFound,
+    IdNotFound,
 }
 
 #[derive(Clone, Debug)]
 pub struct Users {
-    by_id: HashMap<ID, Arc<RwLock<User>>>,
+    by_id: HashMap<Id, Arc<RwLock<User>>>,
     by_handle: HashMap<String, Weak<RwLock<User>>>,
 }
 
@@ -54,7 +54,7 @@ impl Users {
 
         let id_entry = match self.by_id.entry(user.id.clone()) {
             Occupied(_) => {
-                return Err(InsertionError::IDExists);
+                return Err(InsertionError::IdExists);
             }
             Vacant(entry) => entry,
         };
@@ -73,17 +73,17 @@ impl Users {
         }
     }
 
-    pub fn get_by_id(&self, user_id: &ID) -> Option<Arc<RwLock<User>>> {
+    pub fn get_by_id(&self, user_id: &Id) -> Option<Arc<RwLock<User>>> {
         self.by_id.get(user_id).cloned()
     }
 
     pub async fn update(
         &self,
-        user_id: &ID,
+        user_id: &Id,
         name: String,
         handle: String,
     ) -> Result<(), UpdateError> {
-        let user_locked = self.get_by_id(&user_id).ok_or(UpdateError::IDNotFound)?;
+        let user_locked = self.get_by_id(&user_id).ok_or(UpdateError::IdNotFound)?;
 
         let mut user = user_locked.write().await;
         user.name = name;
@@ -92,8 +92,8 @@ impl Users {
         Ok(())
     }
 
-    pub async fn update_password(&self, user_id: ID, password: String) -> Result<(), UpdateError> {
-        let user_locked = self.get_by_id(&user_id).ok_or(UpdateError::IDNotFound)?;
+    pub async fn update_password(&self, user_id: Id, password: String) -> Result<(), UpdateError> {
+        let user_locked = self.get_by_id(&user_id).ok_or(UpdateError::IdNotFound)?;
 
         let mut user = user_locked.write().await;
         user.password = password;

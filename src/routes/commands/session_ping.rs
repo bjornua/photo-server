@@ -1,13 +1,13 @@
 use crate::{
-    app_state::{self, RequestState},
-    lib::id::ID,
+    app_state::{self, AppRequest},
+    lib::id::Id,
 };
 use app_state::event::Event;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 pub struct Input {
-    pub session_id: ID,
+    pub session_id: Id,
 }
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -17,7 +17,7 @@ pub enum Output {
     SessionNotFound,
 }
 
-pub async fn run<'a>(state: RequestState, input: Input) -> Output {
+pub async fn run(state: impl AppRequest, input: Input) -> Output {
     let store = state.get_store().await;
 
     if store.sessions.get(&input.session_id).is_none() {
@@ -39,32 +39,35 @@ pub async fn run<'a>(state: RequestState, input: Input) -> Output {
 mod tests {
     use std::str::FromStr;
 
-    use app_state::event::{DateEvent, Event};
+    use app_state::{
+        event::{DateEvent, Event},
+        log,
+    };
     use chrono::{TimeZone, Utc};
 
     use super::{run, Input, Output};
 
     use crate::{
         app_state::{self, AppState},
-        lib::id::ID,
+        lib::id::Id,
     };
 
     #[async_std::test]
     async fn test_run_unknown_session() {
-        let state = AppState::new().into_request_state_current_time();
-        let session_id = ID::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap();
+        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
+        let session_id = Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap();
         let result = run(state, Input { session_id }).await;
         assert_eq!(result, Output::SessionNotFound)
     }
 
     #[async_std::test]
     async fn test_run_success() {
-        let app_state = AppState::new();
+        let app_state = AppState::new(log::null::Writer {});
         let app_state = app_state
             .write(DateEvent {
                 date: Utc.ymd(1970, 1, 1).and_hms_milli(0, 0, 1, 444),
                 kind: Event::SessionCreate {
-                    session_id: ID::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
+                    session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
                 },
             })
             .await;
@@ -72,9 +75,9 @@ mod tests {
         let result = run(
             app_state
                 .clone()
-                .into_request_state(Utc.ymd(1970, 1, 1).and_hms_milli(0, 10, 1, 123)),
+                .into_app_request(Utc.ymd(1970, 1, 1).and_hms_milli(0, 10, 1, 123)),
             Input {
-                session_id: ID::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
+                session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
             },
         )
         .await;
@@ -85,7 +88,7 @@ mod tests {
         assert_eq!(
             store
                 .sessions
-                .get(&ID::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap())
+                .get(&Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap())
                 .unwrap()
                 .last_ping,
             Utc.ymd(1970, 1, 1).and_hms_milli(0, 10, 1, 123)

@@ -1,4 +1,4 @@
-use crate::{app_state::users::User, lib::authentication::Authentication};
+use crate::{app_state::store::users::User, lib::authentication::Authentication};
 
 pub fn session_list(auth: &Authentication) -> bool {
     auth.get_user().is_some()

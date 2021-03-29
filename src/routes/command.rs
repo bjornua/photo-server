@@ -1,4 +1,4 @@
-use crate::routes::commands;
+use crate::{app_state::log::Writer, routes::commands};
 
 use crate::app_state::AppState;
 
@@ -9,8 +9,8 @@ use tide::{Request, Response, StatusCode};
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "type", content = "args")]
 enum Input {
-    Login(commands::login::Input),
-    Logout(commands::logout::Input),
+    Login(commands::session_login::Input),
+    Logout(commands::session_logout::Input),
     SessionCreate(commands::session_create::Input),
     SessionGet(commands::session_get::Input),
     SessionList(commands::session_list::Input),
@@ -24,8 +24,8 @@ enum Input {
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "type", content = "result")]
 enum Output {
-    Login(commands::login::Output),
-    Logout(commands::logout::Output),
+    Login(commands::session_login::Output),
+    Logout(commands::session_logout::Output),
     SessionCreate(commands::session_create::Output),
     SessionGet(commands::session_get::Output),
     SessionList(commands::session_list::Output),
@@ -35,7 +35,7 @@ enum Output {
     UserUpdatePassword(commands::user_update_password::Output),
 }
 
-pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Response>> {
+pub async fn handle<T: Writer>(mut req: Request<AppState<T>>) -> tide::Result<impl Into<Response>> {
     let command_input: Input = match req.take_body().into_json().await {
         Ok(input) => input,
         Err(err) => {
@@ -54,11 +54,12 @@ pub async fn handle(mut req: Request<AppState>) -> tide::Result<impl Into<Respon
         }
     };
 
-    let state = req.state().clone().into_request_state_current_time();
+    let state = req.state();
+    let state = state.clone().into_request_state_current_time();
 
     let result: Output = match command_input {
-        Input::Login(args) => Output::Login(commands::login::run(state, args).await),
-        Input::Logout(args) => Output::Logout(commands::logout::run(state, args).await),
+        Input::Login(args) => Output::Login(commands::session_login::run(state, args).await),
+        Input::Logout(args) => Output::Logout(commands::session_logout::run(state, args).await),
         Input::SessionCreate(args) => {
             Output::SessionCreate(commands::session_create::run(state, args).await)
         }
