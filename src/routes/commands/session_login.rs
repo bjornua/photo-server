@@ -52,16 +52,14 @@ pub async fn run(state: impl AppRequest, input: Input) -> Output {
 mod tests {
     use std::str::FromStr;
 
-    use crate::app_state::{event::Event, make_test_state};
-
     use super::{run, Input, Output};
-    use crate::lib::id::Id;
 
-    use crate::app_state::AppRequest;
+    use crate::app_state::{event::Event, log, AppRequest, AppState};
+    use crate::lib::id::Id;
 
     #[async_std::test]
     async fn test_run_unknown_session() {
-        let state = make_test_state();
+        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
         let session_id = Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap();
         let result = run(
             state,
@@ -77,7 +75,7 @@ mod tests {
 
     #[async_std::test]
     async fn test_run_bad_user() {
-        let state = make_test_state();
+        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
         let session_id = Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap();
         let state = state
             .write(Event::SessionCreate {
@@ -98,7 +96,7 @@ mod tests {
 
     #[async_std::test]
     async fn test_run_bad_password() {
-        let state = make_test_state();
+        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
         let state = state
             .write(Event::SessionCreate {
                 session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
@@ -126,7 +124,7 @@ mod tests {
 
     #[async_std::test]
     async fn test_run_good_auth() {
-        let state = make_test_state();
+        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
         let session_id = Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap();
         let state = state
             .write(Event::SessionCreate {

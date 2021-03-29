@@ -71,11 +71,6 @@ pub struct AppRequestStore<L: log::Writer> {
     date: chrono::DateTime<chrono::Utc>,
 }
 
-#[cfg(test)]
-pub fn make_test_state() -> AppRequestStore<log::null::Writer> {
-    AppState::new(log::null::Writer {}).into_request_state_current_time()
-}
-
 #[async_trait::async_trait]
 pub trait AppRequest {
     async fn get_store<'a>(&'_ self) -> RwLockReadGuard<'_, store::Store>;
