@@ -1,8 +1,9 @@
+use crate::app_state::store::sessions::Session;
 use crate::app_state::store::users::User;
-// use app_state::{sessions::Session, Store};
+use crate::app_state::store::Store;
+use crate::lib::id::Id;
 use async_std::sync::{Arc, RwLock, Weak};
-
-// use tide::http::Headers;
+use tide::http::Headers;
 
 #[derive(Clone, Debug)]
 pub enum Authentication {
@@ -19,8 +20,7 @@ impl Authentication {
     }
 }
 
-/*
-pub fn get_session_id<H: AsRef<Headers>>(headers: H) -> Option<ID> {
+pub fn get_session_id<H: AsRef<Headers>>(headers: H) -> Option<Id> {
     let headers_ref = headers.as_ref();
 
     let value = headers_ref.get("Authorization")?.as_str();
@@ -48,13 +48,18 @@ pub fn get_authentication<H: AsRef<Headers>>(headers: H, store: &Store) -> Authe
     }
 }
 
-pub async fn get_user<H: AsRef<Headers>>(headers: H, store: &Store) -> Option<Arc<RwLock<User>>> {
-    return get_authentication(headers, store).get_user();
+pub async fn get_user(headers: impl AsRef<Headers>, store: &Store) -> Option<Arc<RwLock<User>>> {
+    return get_authentication(headers, &*store).get_user();
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::lib::id::ID;
+    use crate::app_state::event::Event;
+    use crate::app_state::log;
+    use crate::app_state::AppRequest;
+    use crate::app_state::AppState;
+    use crate::lib::id::Id;
+    use std::str::FromStr;
     use tide::http::Url;
 
     #[test]
@@ -66,8 +71,42 @@ mod tests {
 
         assert_eq!(
             super::get_session_id(request),
-            "3wB4St9NzSaC4r6ouj56eyRku22n".parse::<ID>().ok()
+            "3wB4St9NzSaC4r6ouj56eyRku22n".parse::<Id>().ok()
+        );
+    }
+
+    #[async_std::test]
+    async fn test_get_user() {
+        let url = Url::parse("http://example.org/").unwrap();
+        let mut request = tide::http::Request::new(tide::http::Method::Post, url);
+
+        request.insert_header("Authorization", "Bearer 3wB4St9NzSaC4r6ouj56eyRku22n");
+        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
+        let state = state
+            .write(Event::SessionCreate {
+                session_id: Id::from_str("3wB4St9NzSaC4r6ouj56eyRku22n").unwrap(),
+            })
+            .await
+            .write(Event::UserCreate {
+                user_id: Id::from_str("2bQFgyUNCCRUs8SitkgBG8L37KL1").unwrap(),
+                handle: "heidi".to_string(),
+                name: "Heidi".to_string(),
+                password: "eeQuee9t".to_string(),
+            })
+            .await
+            .write(Event::SessionLogin {
+                session_id: Id::from_str("3wB4St9NzSaC4r6ouj56eyRku22n").unwrap(),
+                user_id: Id::from_str("2bQFgyUNCCRUs8SitkgBG8L37KL1").unwrap(),
+            })
+            .await;
+
+        let store = state.get_store().await;
+        let user_locked = super::get_user(request, &store).await.unwrap();
+        let user = user_locked.read().await;
+
+        assert_eq!(
+            user.id,
+            "2bQFgyUNCCRUs8SitkgBG8L37KL1".parse::<Id>().unwrap()
         );
     }
 }
-*/
