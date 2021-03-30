@@ -6,13 +6,13 @@ use std::{
 
 use async_std::sync::RwLock;
 
-use crate::lib::{authentication::Authentication, id::ID};
+use crate::lib::{authentication::Authentication, id::Id};
 
 use super::users::User;
 
 #[derive(Clone, Debug)]
 pub struct Session {
-    pub token: ID,
+    pub token: Id,
     pub last_ping: chrono::DateTime<chrono::Utc>,
     pub authentication: Authentication,
 }
@@ -31,7 +31,7 @@ impl Eq for Session {}
 
 #[derive(Clone, Debug)]
 pub struct Sessions {
-    inner: HashMap<ID, Session>,
+    inner: HashMap<Id, Session>,
 }
 
 impl Sessions {
@@ -41,7 +41,7 @@ impl Sessions {
         }
     }
 
-    pub fn create(&mut self, token: ID, date: chrono::DateTime<chrono::Utc>) {
+    pub fn create(&mut self, token: Id, date: chrono::DateTime<chrono::Utc>) {
         let session = Session {
             authentication: Authentication::NotAuthenticated,
             last_ping: date,
@@ -56,7 +56,7 @@ impl Sessions {
         };
     }
 
-    pub fn get(&self, session_id: &ID) -> Option<&Session> {
+    pub fn get(&self, session_id: &Id) -> Option<&Session> {
         self.inner.get(session_id)
     }
 
@@ -64,18 +64,18 @@ impl Sessions {
         self.inner.values().collect()
     }
 
-    pub fn login(&mut self, session_id: &ID, user: Weak<RwLock<User>>) -> Option<&Session> {
+    pub fn login(&mut self, session_id: &Id, user: Weak<RwLock<User>>) -> Option<&Session> {
         let session = self.inner.get_mut(session_id)?;
         session.authentication = Authentication::Authenticated { user };
         Some(&*session)
     }
 
-    pub fn ping(&mut self, session_id: &ID, date: chrono::DateTime<chrono::Utc>) {
+    pub fn ping(&mut self, session_id: &Id, date: chrono::DateTime<chrono::Utc>) {
         let session = self.inner.get_mut(session_id).unwrap();
         session.last_ping = date;
     }
 
-    pub fn logout(&mut self, session_id: &ID) {
+    pub fn logout(&mut self, session_id: &Id) {
         let session = self.inner.get_mut(session_id).unwrap();
         session.authentication = Authentication::NotAuthenticated;
     }
