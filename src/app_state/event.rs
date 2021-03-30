@@ -30,10 +30,6 @@ pub enum Event {
         user_id: Id,
         password: String,
     },
-    SetAvatar {
-        user_id: ID,
-        file_id: ID,
-    },
 }
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DateEvent {
