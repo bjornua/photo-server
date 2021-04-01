@@ -43,6 +43,7 @@ pub async fn run(socket: std::net::SocketAddr) -> tide::Result<()> {
 
     let mut app = tide::with_state(state);
     app.at("/command").post(routes::command::handle);
+    app.at("/upload").post(routes::upload::handle);
     app.listen(socket).await?;
     Ok(())
 }

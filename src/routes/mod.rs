@@ -1,3 +1,3 @@
 pub mod command;
 pub mod commands;
-// pub mod upload;
+pub mod upload;

@@ -1,7 +1,7 @@
-use crate::app_state::store::sessions::Session;
 use crate::app_state::store::users::User;
 use crate::app_state::store::Store;
 use crate::lib::id::Id;
+use crate::{app_state::store::sessions::Session, lib::http::get_bearer_token};
 use async_std::sync::{Arc, RwLock, Weak};
 use tide::http::Headers;
 
@@ -20,21 +20,12 @@ impl Authentication {
     }
 }
 
-pub fn get_session_id<H: AsRef<Headers>>(headers: H) -> Option<Id> {
-    let headers_ref = headers.as_ref();
-
-    let value = headers_ref.get("Authorization")?.as_str();
-    let mut words = value.splitn(2, ' ');
-
-    if words.next()? != "Bearer" {
-        return None;
-    };
-    let str = words.next()?;
-
-    str.parse().ok()
+pub fn get_session_id(headers: &Headers) -> Option<Id> {
+    let token = get_bearer_token(headers)?;
+    token.parse().ok()
 }
 
-pub fn get_authentication<H: AsRef<Headers>>(headers: H, store: &Store) -> Authentication {
+pub fn get_authentication(headers: &Headers, store: &Store) -> Authentication {
     let session_id = match get_session_id(headers) {
         Some(id) => id,
         None => return Authentication::NotAuthenticated,
@@ -48,7 +39,7 @@ pub fn get_authentication<H: AsRef<Headers>>(headers: H, store: &Store) -> Authe
     }
 }
 
-pub async fn get_user(headers: impl AsRef<Headers>, store: &Store) -> Option<Arc<RwLock<User>>> {
+pub async fn get_user(headers: &Headers, store: &Store) -> Option<Arc<RwLock<User>>> {
     return get_authentication(headers, &*store).get_user();
 }
 
@@ -70,7 +61,7 @@ mod tests {
         request.insert_header("Authorization", "Bearer 3wB4St9NzSaC4r6ouj56eyRku22n");
 
         assert_eq!(
-            super::get_session_id(request),
+            super::get_session_id(request.as_ref()),
             "3wB4St9NzSaC4r6ouj56eyRku22n".parse::<Id>().ok()
         );
     }
@@ -101,7 +92,7 @@ mod tests {
             .await;
 
         let store = state.get_store().await;
-        let user_locked = super::get_user(request, &store).await.unwrap();
+        let user_locked = super::get_user(request.as_ref(), &store).await.unwrap();
         let user = user_locked.read().await;
 
         assert_eq!(

@@ -57,6 +57,12 @@ impl Store {
             Event::UserUpdatePassword { user_id, password } => {
                 self.users.update_password(user_id, password).await.unwrap();
             }
+            Event::UserFileUploaded {
+                user_id,
+                file_id,
+                file_type,
+                file_size,
+            } => {}
         }
     }
 }
