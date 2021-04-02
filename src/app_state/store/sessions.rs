@@ -1,12 +1,12 @@
-use std::{
-    collections::HashMap,
-    hash::{Hash, Hasher},
-    sync::Weak,
-};
+use std::collections::HashMap;
+use std::hash::Hash;
+use std::hash::Hasher;
+use std::sync::Weak;
 
 use async_std::sync::RwLock;
 
-use crate::lib::{authentication::Authentication, id::Id};
+use crate::lib::authentication::Authentication;
+use crate::lib::id::Id;
 
 use super::users::User;
 

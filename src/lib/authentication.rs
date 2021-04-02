@@ -27,7 +27,7 @@ pub fn get_session_id(headers: &Headers) -> Option<Id> {
 
 pub fn get_authentication(headers: &Headers, store: &Store) -> Authentication {
     let session_id = match get_session_id(headers) {
-        Some(id) => id,
+        Some(session_id) => session_id,
         None => return Authentication::NotAuthenticated,
     };
 

@@ -1,18 +1,21 @@
+use crate::app_state::event::Event;
+use crate::app_state::log::Writer;
+use crate::app_state::AppRequest;
 use crate::app_state::AppState;
-use crate::app_state::{event::Event, AppRequest};
 use crate::lib::authentication::get_user;
 use crate::lib::http;
 use crate::lib::http::encode_response;
-use crate::{app_state::log::Writer, lib::id::Id};
+use crate::lib::id::Id;
 use async_std::io::copy;
 
+use serde::Deserialize;
 use serde::Serialize;
-use tide::{log, Request, Response};
+use tide::{Request, Response};
 
-#[derive(Serialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(tag = "type")]
 pub enum Output {
-    Success,
+    Success { upload_id: Id },
     NotAuthenticated,
     InvalidMimeType,
     InternalServerError,
@@ -38,19 +41,19 @@ pub async fn handle_inner<T: Writer>(mut req: Request<AppState<T>>) -> Output {
 
     let body = req.take_body();
 
-    let file_id = Id::new();
-    let file_name = format!("./uploads/{}", file_id);
+    let upload_id = Id::new();
+    let file_name = format!("./uploads/{}", upload_id);
 
     let file = match async_std::fs::OpenOptions::new()
         .write(true)
         .read(false)
         .create_new(true)
-        .open(file_name)
+        .open(&file_name)
         .await
     {
         Ok(file) => file,
         Err(e) => {
-            log::error!("Could not create file: {:?}", e);
+            println!("Could not create file {:?}: {:?}", file_name, e);
             return Output::InternalServerError;
         }
     };
@@ -58,18 +61,91 @@ pub async fn handle_inner<T: Writer>(mut req: Request<AppState<T>>) -> Output {
     let file_size = match copy(body, file).await {
         Ok(size) => size,
         Err(e) => {
-            log::error!("Body to file copy error: {:?}", e);
+            println!("Body to file copy error: {:?}", e);
             return Output::InternalServerError;
         }
     };
     drop(store);
 
-    state.write(Event::UserFileUploaded {
-        user_id,
-        file_type,
-        file_size,
-        file_id,
-    });
+    state
+        .write(Event::UploadCreated {
+            user_id,
+            type_: file_type,
+            size: file_size,
+            upload_id: upload_id.clone(),
+        })
+        .await;
 
-    return Output::Success;
+    return Output::Success { upload_id };
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use app_state::event::Event;
+    use app_state::log;
+    use app_state::AppRequest;
+    use app_state::AppState;
+    use tide::http::{Method, Request, Url};
+
+    use crate::{
+        app_state::{self},
+        lib::id::Id,
+    };
+
+    use super::Output;
+
+    #[async_std::test]
+    async fn test_run_success() {
+        let app_state = AppState::new(log::null::Writer {});
+        let state = app_state.clone().into_request_state_current_time();
+        let state = state
+            .write(Event::SessionCreate {
+                session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
+            })
+            .await
+            .write(Event::UserCreate {
+                user_id: Id::from_str("2bQFgyUNCCRUs8SitkgBG8L37KL1").unwrap(),
+                handle: "heidi".to_string(),
+                name: "Heidi".to_string(),
+                password: "eeQuee9t".to_string(),
+            })
+            .await
+            .write(Event::SessionLogin {
+                session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
+                user_id: Id::from_str("2bQFgyUNCCRUs8SitkgBG8L37KL1").unwrap(),
+            })
+            .await;
+
+        let app = crate::server::make_app(app_state);
+
+        let mut request = Request::new(
+            Method::Post,
+            Url::parse("http://example.org/upload").unwrap(),
+        );
+
+        request.insert_header("Authorization", "Bearer 3zCD548f6YU7163rZ84ZGamWkQM");
+        request.insert_header("Content-Type", "image/jpeg");
+
+        let mut response: tide::http::Response = app.respond(request).await.unwrap();
+        let result: Output = response.body_json().await.unwrap();
+
+        let upload_id = match result {
+            Output::Success { upload_id } => upload_id,
+            o => {
+                panic!("Unexpected output {:?}", o);
+            }
+        };
+
+        let store = state.get_store().await;
+        let upload = store.uploads.get(&upload_id).unwrap();
+
+        assert_eq!(upload.type_, crate::lib::file::Type::Jpg);
+        assert_eq!(
+            upload.user_id,
+            Id::from_str("2bQFgyUNCCRUs8SitkgBG8L37KL1").unwrap()
+        );
+        assert_eq!(upload.size, 0);
+    }
 }

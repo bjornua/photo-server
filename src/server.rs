@@ -2,13 +2,11 @@ use std::convert::TryFrom;
 
 use async_std::path::PathBuf;
 
-use crate::{
-    app_state::{
-        event::{DateEvent, Event},
-        log,
-    },
-    routes,
-};
+use crate::app_state::event::DateEvent;
+use crate::app_state::event::Event;
+use crate::app_state::log;
+
+use crate::routes;
 
 use crate::{app_state::AppState, lib::id::Id};
 
@@ -41,9 +39,14 @@ pub async fn run(socket: std::net::SocketAddr) -> tide::Result<()> {
             .await;
     }
 
+    let app = make_app(state);
+    app.listen(socket).await?;
+    Ok(())
+}
+
+pub fn make_app<L: log::Writer + 'static>(state: AppState<L>) -> tide::Server<AppState<L>> {
     let mut app = tide::with_state(state);
     app.at("/command").post(routes::command::handle);
     app.at("/upload").post(routes::upload::handle);
-    app.listen(socket).await?;
-    Ok(())
+    app
 }

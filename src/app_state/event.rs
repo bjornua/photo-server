@@ -30,11 +30,11 @@ pub enum Event {
         user_id: Id,
         password: String,
     },
-    UserFileUploaded {
+    UploadCreated {
+        upload_id: Id,
         user_id: Id,
-        file_id: Id,
-        file_type: file::Type,
-        file_size: u64,
+        type_: file::Type,
+        size: u64,
     },
 }
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

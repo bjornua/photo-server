@@ -26,7 +26,6 @@ impl Writer {
 impl log::Writer for Writer {
     async fn write(&mut self, event: &DateEvent) {
         let serialized = serde_json::to_string(event).unwrap();
-        dbg!(&serialized);
 
         self.file.write_all(serialized.as_bytes()).await.unwrap();
         self.file.write_all("\n".as_bytes()).await.unwrap();
