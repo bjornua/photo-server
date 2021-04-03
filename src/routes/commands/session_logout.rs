@@ -36,25 +36,21 @@ pub async fn run(state: impl AppRequest, input: Input) -> Output {
 
 #[cfg(test)]
 mod tests {
+    use crate::lib::testutils::base_state;
     use std::str::FromStr;
-
-    use app_state::{event::Event, log, AppRequest, AppState};
 
     use super::{run, Input, Output};
 
-    use crate::{
-        app_state::{self},
-        lib::id::Id,
-    };
+    use crate::lib::id::Id;
 
     #[async_std::test]
     async fn test_run_unknown_session() {
-        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
+        let app_state = base_state().await;
 
         let result = run(
-            state,
+            app_state.into_request_state_current_time(),
             Input {
-                session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
+                session_id: Id::from_str("3hbzu4vGorn5PdG3HtiW4UQe784R").unwrap(),
             },
         )
         .await;
@@ -63,34 +59,17 @@ mod tests {
 
     #[async_std::test]
     async fn test_run_success() {
-        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
-        let state = state
-            .write(Event::SessionCreate {
-                session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
-            })
-            .await
-            .write(Event::UserCreate {
-                user_id: Id::from_str("2bQFgyUNCCRUs8SitkgBG8L37KL1").unwrap(),
-                handle: "heidi".to_string(),
-                name: "Heidi".to_string(),
-                password: "eeQuee9t".to_string(),
-            })
-            .await
-            .write(Event::SessionLogin {
-                session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
-                user_id: Id::from_str("2bQFgyUNCCRUs8SitkgBG8L37KL1").unwrap(),
-            })
-            .await;
+        let app_state = base_state().await;
 
         let result = run(
-            state.clone(),
+            app_state.clone().into_request_state_current_time(),
             Input {
                 session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
             },
         )
         .await;
 
-        let store = state.get_store().await;
+        let store = app_state.get_store().await;
 
         assert_eq!(result, Output::Success);
         assert!(store

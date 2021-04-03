@@ -83,40 +83,19 @@ pub async fn handle_inner<T: Writer>(mut req: Request<AppState<T>>) -> Output {
 mod tests {
     use std::str::FromStr;
 
-    use app_state::event::Event;
-    use app_state::log;
-    use app_state::AppRequest;
-    use app_state::AppState;
+    use crate::app_state::AppRequest;
     use tide::http::{Method, Request, Url};
 
-    use crate::{
-        app_state::{self},
-        lib::id::Id,
-    };
+    use crate::lib::id::Id;
+    use crate::lib::testutils::base_state;
 
     use super::Output;
 
     #[async_std::test]
     async fn test_run_success() {
-        let app_state = AppState::new(log::null::Writer {});
+        let app_state = base_state().await;
+
         let state = app_state.clone().into_request_state_current_time();
-        let state = state
-            .write(Event::SessionCreate {
-                session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
-            })
-            .await
-            .write(Event::UserCreate {
-                user_id: Id::from_str("2bQFgyUNCCRUs8SitkgBG8L37KL1").unwrap(),
-                handle: "heidi".to_string(),
-                name: "Heidi".to_string(),
-                password: "eeQuee9t".to_string(),
-            })
-            .await
-            .write(Event::SessionLogin {
-                session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
-                user_id: Id::from_str("2bQFgyUNCCRUs8SitkgBG8L37KL1").unwrap(),
-            })
-            .await;
 
         let app = crate::server::make_app(app_state);
 
