@@ -1,8 +1,8 @@
-use crate::{
-    app_state::{event::Event, AppRequest},
-    lib::id::Id,
-};
-use serde::{Deserialize, Serialize};
+use crate::app_state::event::Event;
+use crate::app_state::AppRequest;
+use crate::lib::id::Id;
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Deserialize)]
 pub struct Input {
@@ -52,14 +52,22 @@ pub async fn run(state: impl AppRequest, input: Input) -> Output {
 mod tests {
     use std::str::FromStr;
 
-    use super::{run, Input, Output};
+    use std::path::PathBuf;
 
-    use crate::app_state::{event::Event, log, AppRequest, AppState};
+    use super::run;
+    use super::Input;
+    use super::Output;
+
+    use crate::app_state::event::Event;
+    use crate::app_state::log;
+    use crate::app_state::AppRequest;
+    use crate::app_state::AppState;
     use crate::lib::id::Id;
 
     #[async_std::test]
     async fn test_run_unknown_session() {
-        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
+        let state = AppState::new(log::null::Writer {}, PathBuf::from("./uploads"))
+            .into_request_state_current_time();
         let result = run(
             state,
             Input {

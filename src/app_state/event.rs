@@ -1,4 +1,5 @@
-use crate::lib::{file, id::Id};
+use crate::lib::file;
+use crate::lib::id::Id;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum Event {

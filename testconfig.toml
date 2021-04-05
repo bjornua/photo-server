@@ -1,0 +1,5 @@
+
+port = 3000
+ip = "127.0.0.1"
+upload_dir = "./uploads"
+db_file = "./thelog.log"

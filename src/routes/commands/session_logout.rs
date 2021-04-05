@@ -1,9 +1,8 @@
-use serde::{Deserialize, Serialize};
-
-use crate::{
-    app_state::{event::Event, AppRequest},
-    lib::id::Id,
-};
+use crate::app_state::event::Event;
+use crate::app_state::AppRequest;
+use crate::lib::id::Id;
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Deserialize)]
 pub struct Input {
@@ -39,7 +38,9 @@ mod tests {
     use crate::lib::testutils::base_state;
     use std::str::FromStr;
 
-    use super::{run, Input, Output};
+    use super::run;
+    use super::Input;
+    use super::Output;
 
     use crate::lib::id::Id;
 

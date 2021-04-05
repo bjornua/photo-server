@@ -1,9 +1,14 @@
-use crate::{app_state::log::Writer, lib::http::encode_response, routes::commands};
+use crate::app_state::log::Writer;
+use crate::lib::http::encode_response;
+use crate::routes::commands;
 
 use crate::app_state::AppState;
 
-use serde::{Deserialize, Serialize};
-use tide::{Request, Response, StatusCode};
+use serde::Deserialize;
+use serde::Serialize;
+use tide::Request;
+use tide::Response;
+use tide::StatusCode;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]

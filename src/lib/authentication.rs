@@ -1,8 +1,11 @@
+use crate::app_state::store::sessions::Session;
 use crate::app_state::store::users::User;
 use crate::app_state::store::Store;
+use crate::lib::http::get_bearer_token;
 use crate::lib::id::Id;
-use crate::{app_state::store::sessions::Session, lib::http::get_bearer_token};
-use async_std::sync::{Arc, RwLock, Weak};
+use async_std::sync::Arc;
+use async_std::sync::RwLock;
+use async_std::sync::Weak;
 use tide::http::Headers;
 
 #[derive(Clone, Debug)]
@@ -50,6 +53,7 @@ mod tests {
     use crate::app_state::AppRequest;
     use crate::app_state::AppState;
     use crate::lib::id::Id;
+    use std::path::PathBuf;
     use std::str::FromStr;
     use tide::http::Url;
 
@@ -72,7 +76,8 @@ mod tests {
         let mut request = tide::http::Request::new(tide::http::Method::Post, url);
 
         request.insert_header("Authorization", "Bearer 3wB4St9NzSaC4r6ouj56eyRku22n");
-        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
+        let state = AppState::new(log::null::Writer {}, PathBuf::from("./uploads"))
+            .into_request_state_current_time();
         let state = state
             .write(Event::SessionCreate {
                 session_id: Id::from_str("3wB4St9NzSaC4r6ouj56eyRku22n").unwrap(),

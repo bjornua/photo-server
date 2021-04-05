@@ -10,7 +10,8 @@ use async_std::io::copy;
 
 use serde::Deserialize;
 use serde::Serialize;
-use tide::{Request, Response};
+use tide::Request;
+use tide::Response;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(tag = "type")]
@@ -84,7 +85,9 @@ mod tests {
     use std::str::FromStr;
 
     use crate::app_state::AppRequest;
-    use tide::http::{Method, Request, Url};
+    use tide::http::Method;
+    use tide::http::Request;
+    use tide::http::Url;
 
     use crate::lib::id::Id;
     use crate::lib::testutils::base_state;

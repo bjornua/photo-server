@@ -1,11 +1,10 @@
+use crate::app_state;
+use crate::app_state::AppRequest;
+use crate::lib::id::Id;
+use crate::permission;
 use app_state::store::sessions;
-use serde::{Deserialize, Serialize};
-
-use crate::{
-    app_state::{self, AppRequest},
-    lib::id::Id,
-    permission,
-};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Deserialize)]
 pub struct Input {

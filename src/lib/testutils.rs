@@ -5,7 +5,10 @@ use crate::app_state::log;
 use crate::app_state::AppRequest;
 
 #[cfg(test)]
-use crate::app_state::{event::Event, AppState};
+use crate::app_state::event::Event;
+
+#[cfg(test)]
+use crate::app_state::AppState;
 
 #[cfg(test)]
 use crate::lib::id::Id;

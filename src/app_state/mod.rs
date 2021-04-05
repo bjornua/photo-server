@@ -2,12 +2,17 @@ pub mod event;
 pub mod log;
 pub mod store;
 
-use async_std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
+use async_std::sync::Arc;
+use async_std::sync::Mutex;
+use async_std::sync::RwLock;
+use async_std::sync::RwLockReadGuard;
 use event::Event;
+use std::path::PathBuf;
 
 use crate::app_state::event::DateEvent;
 
 pub struct AppState<L: log::Writer> {
+    upload_dir: Arc<PathBuf>,
     store: Arc<RwLock<store::Store>>,
     logger: Arc<Mutex<L>>,
 }
@@ -15,6 +20,7 @@ pub struct AppState<L: log::Writer> {
 impl<L: log::Writer> Clone for AppState<L> {
     fn clone(&self) -> Self {
         Self {
+            upload_dir: self.upload_dir.clone(),
             store: self.store.clone(),
             logger: self.logger.clone(),
         }
@@ -22,8 +28,9 @@ impl<L: log::Writer> Clone for AppState<L> {
 }
 
 impl<L: log::Writer> AppState<L> {
-    pub fn new(logger: L) -> Self {
+    pub fn new(logger: L, upload_dir: PathBuf) -> Self {
         Self {
+            upload_dir: Arc::new(upload_dir),
             store: Arc::new(RwLock::new(store::Store::new())),
             logger: Arc::new(Mutex::new(logger)),
         }

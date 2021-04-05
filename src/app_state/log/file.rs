@@ -1,17 +1,17 @@
-use crate::app_state::{event::DateEvent, log};
-use async_std::{
-    fs::OpenOptions,
-    io::{
-        prelude::{BufReadExt, WriteExt},
-        BufReader,
-    },
-};
+use crate::app_state::event::DateEvent;
+use crate::app_state::log;
+use async_std::fs::File;
+use async_std::fs::OpenOptions;
+use async_std::io::prelude::BufReadExt;
+use async_std::io::prelude::WriteExt;
+use async_std::io::BufReader;
+use std::path::Path;
 pub struct Writer {
-    file: async_std::fs::File,
+    file: File,
 }
 
 impl Writer {
-    pub async fn new(path: &async_std::path::Path) -> Self {
+    pub async fn new(path: &Path) -> Self {
         let file = OpenOptions::new()
             .write(true)
             .append(true)
@@ -34,12 +34,12 @@ impl log::Writer for Writer {
 }
 
 pub struct Reader {
-    reader: async_std::io::BufReader<async_std::fs::File>,
+    reader: BufReader<File>,
     buffer: String,
 }
 
 impl Reader {
-    pub async fn new(path: &async_std::path::Path) -> Self {
+    pub async fn new(path: &Path) -> Self {
         let file = OpenOptions::new().read(true).open(path).await.unwrap();
         let reader = BufReader::new(file);
         let buffer = String::new();

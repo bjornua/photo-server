@@ -1,22 +1,25 @@
 use std::convert::TryFrom;
 
-use async_std::path::PathBuf;
+use async_std::net::SocketAddr;
+use std::path::PathBuf;
 
 use crate::app_state::event::DateEvent;
 use crate::app_state::event::Event;
 use crate::app_state::log;
+use crate::lib::config::Config;
 
 use crate::routes;
 
-use crate::{app_state::AppState, lib::id::Id};
+use crate::app_state::AppState;
+use crate::lib::id::Id;
 
 const LOG_FILE: &str = "thelog.log";
 
-pub async fn run(socket: std::net::SocketAddr) -> tide::Result<()> {
+pub async fn run(config: Config) -> tide::Result<()> {
     let log_writer =
         crate::app_state::log::file::Writer::new(&PathBuf::try_from(LOG_FILE).unwrap()).await;
     let log_reader = log::file::Reader::new(&PathBuf::try_from(LOG_FILE).unwrap()).await;
-    let mut state = AppState::new(log_writer);
+    let mut state = AppState::new(log_writer, config.upload_dir);
     state = state.replay(log_reader).await;
 
     if state
@@ -40,6 +43,7 @@ pub async fn run(socket: std::net::SocketAddr) -> tide::Result<()> {
     }
 
     let app = make_app(state);
+    let socket = SocketAddr::new(config.ip.into(), config.port);
     app.listen(socket).await?;
     Ok(())
 }

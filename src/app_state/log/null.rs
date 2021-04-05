@@ -1,4 +1,5 @@
-use crate::app_state::{event::DateEvent, log};
+use crate::app_state::event::DateEvent;
+use crate::app_state::log;
 #[derive(Clone)]
 pub struct Writer {}
 

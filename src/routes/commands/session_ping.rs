@@ -1,9 +1,9 @@
-use crate::{
-    app_state::{self, AppRequest},
-    lib::id::Id,
-};
+use crate::app_state;
+use crate::app_state::AppRequest;
+use crate::lib::id::Id;
 use app_state::event::Event;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Deserialize)]
 pub struct Input {
@@ -39,22 +39,25 @@ pub async fn run(state: impl AppRequest, input: Input) -> Output {
 mod tests {
     use std::str::FromStr;
 
-    use app_state::{
-        event::{DateEvent, Event},
-        log,
-    };
-    use chrono::{TimeZone, Utc};
+    use app_state::event::DateEvent;
+    use app_state::event::Event;
+    use app_state::log;
+    use chrono::TimeZone;
+    use chrono::Utc;
+    use std::path::PathBuf;
 
-    use super::{run, Input, Output};
+    use super::run;
+    use super::Input;
+    use super::Output;
 
-    use crate::{
-        app_state::{self, AppState},
-        lib::id::Id,
-    };
+    use crate::app_state;
+    use crate::app_state::AppState;
+    use crate::lib::id::Id;
 
     #[async_std::test]
     async fn test_run_unknown_session() {
-        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
+        let state = AppState::new(log::null::Writer {}, PathBuf::from("./uploads"))
+            .into_request_state_current_time();
         let session_id = Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap();
         let result = run(state, Input { session_id }).await;
         assert_eq!(result, Output::SessionNotFound)
@@ -62,7 +65,7 @@ mod tests {
 
     #[async_std::test]
     async fn test_run_success() {
-        let app_state = AppState::new(log::null::Writer {});
+        let app_state = AppState::new(log::null::Writer {}, PathBuf::from("./uploads"));
         let app_state = app_state
             .write(DateEvent {
                 date: Utc.ymd(1970, 1, 1).and_hms_milli(0, 0, 1, 444),

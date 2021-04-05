@@ -2,7 +2,8 @@ pub mod sessions;
 pub mod uploads;
 pub mod users;
 
-use crate::app_state::{event::Event, store::uploads::Upload};
+use crate::app_state::event::Event;
+use crate::app_state::store::uploads::Upload;
 use async_std::sync::Arc;
 
 use crate::app_state::event::DateEvent;
