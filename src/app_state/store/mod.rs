@@ -1,25 +1,21 @@
 pub mod sessions;
+pub mod uploads;
 pub mod users;
 
 use crate::app_state::event::Event;
+use crate::app_state::store::uploads::Upload;
 use async_std::sync::Arc;
 
 use crate::app_state::event::DateEvent;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Store {
     pub users: users::Users,
     pub sessions: sessions::Sessions,
+    pub uploads: uploads::Uploads,
 }
 
 impl Store {
-    pub fn new() -> Self {
-        Self {
-            sessions: sessions::Sessions::new(),
-            users: users::Users::new(),
-        }
-    }
-
     pub async fn on_event(&mut self, command: DateEvent) {
         match command.kind {
             Event::SessionLogin {
@@ -57,6 +53,20 @@ impl Store {
             Event::UserUpdatePassword { user_id, password } => {
                 self.users.update_password(user_id, password).await.unwrap();
             }
+            Event::UploadCreated {
+                user_id,
+                upload_id: file_id,
+                type_: file_type,
+                size: file_size,
+            } => self.uploads.create({
+                Upload {
+                    id: file_id,
+                    user_id,
+                    type_: file_type,
+                    size: file_size,
+                    date_uploaded: command.date,
+                }
+            }),
         }
     }
 }

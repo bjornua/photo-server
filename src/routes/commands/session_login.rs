@@ -1,8 +1,8 @@
-use crate::{
-    app_state::{event::Event, AppRequest},
-    lib::id::Id,
-};
-use serde::{Deserialize, Serialize};
+use crate::app_state::event::Event;
+use crate::app_state::AppRequest;
+use crate::lib::id::Id;
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Deserialize)]
 pub struct Input {
@@ -19,7 +19,7 @@ pub enum Output {
     SessionNotFound,
 }
 
-pub async fn run(state: impl AppRequest, input: Input) -> Output {
+pub async fn run(state: AppRequest, input: Input) -> Output {
     let store = state.get_store().await;
 
     if store.sessions.get(&input.session_id).is_none() {
@@ -45,26 +45,30 @@ pub async fn run(state: impl AppRequest, input: Input) -> Output {
         })
         .await;
 
-    return Output::Success;
+    Output::Success
 }
 
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
-    use super::{run, Input, Output};
+    use super::run;
+    use super::Input;
+    use super::Output;
 
-    use crate::app_state::{event::Event, log, AppRequest, AppState};
+    use crate::app_state::event::Event;
     use crate::lib::id::Id;
+    use crate::lib::testutils;
 
     #[async_std::test]
     async fn test_run_unknown_session() {
-        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
-        let session_id = Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap();
+        let state = testutils::test_state()
+            .await
+            .into_request_state_current_time();
         let result = run(
             state,
             Input {
-                session_id,
+                session_id: Id::from_str("3ejzD98dcfbxdGyPwHrK1aLCBGqt").unwrap(),
                 handle: "".to_string(),
                 password: "".to_string(),
             },
@@ -75,17 +79,20 @@ mod tests {
 
     #[async_std::test]
     async fn test_run_bad_user() {
-        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
-        let session_id = Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap();
+        let state = crate::lib::testutils::base_state()
+            .await
+            .into_request_state_current_time();
+
         let state = state
             .write(Event::SessionCreate {
-                session_id: session_id.clone(),
+                session_id: Id::from_str("3ejzD98dcfbxdGyPwHrK1aLCBGqt").unwrap(),
             })
             .await;
+
         let result = run(
             state,
             Input {
-                session_id,
+                session_id: Id::from_str("3ejzD98dcfbxdGyPwHrK1aLCBGqt").unwrap(),
                 handle: "".to_string(),
                 password: "".to_string(),
             },
@@ -96,19 +103,9 @@ mod tests {
 
     #[async_std::test]
     async fn test_run_bad_password() {
-        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
-        let state = state
-            .write(Event::SessionCreate {
-                session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
-            })
+        let state = crate::lib::testutils::base_state()
             .await
-            .write(Event::UserCreate {
-                user_id: Id::from_str("2bQFgyUNCCRUs8SitkgBG8L37KL1").unwrap(),
-                handle: "heidi".to_string(),
-                name: "Heidi".to_string(),
-                password: "eeQuee9t".to_string(),
-            })
-            .await;
+            .into_request_state_current_time();
 
         let result = run(
             state,
@@ -124,25 +121,14 @@ mod tests {
 
     #[async_std::test]
     async fn test_run_good_auth() {
-        let state = AppState::new(log::null::Writer {}).into_request_state_current_time();
-        let session_id = Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap();
-        let state = state
-            .write(Event::SessionCreate {
-                session_id: session_id.clone(),
-            })
+        let state = crate::lib::testutils::base_state()
             .await
-            .write(Event::UserCreate {
-                user_id: Id::from_str("2bQFgyUNCCRUs8SitkgBG8L37KL1").unwrap(),
-                handle: "heidi".to_string(),
-                name: "Heidi".to_string(),
-                password: "eeQuee9t".to_string(),
-            })
-            .await;
+            .into_request_state_current_time();
 
         let result = run(
             state.clone(),
             Input {
-                session_id,
+                session_id: Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap(),
                 handle: "heidi".to_string(),
                 password: "eeQuee9t".to_string(),
             },

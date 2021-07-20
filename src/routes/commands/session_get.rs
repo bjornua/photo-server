@@ -1,10 +1,11 @@
 use app_state::store::sessions;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::{
-    app_state::{self, AppRequest},
-    lib::{authentication::Authentication, id::Id},
-};
+use crate::app_state;
+use crate::app_state::AppRequest;
+use crate::lib::authentication::Authentication;
+use crate::lib::id::Id;
 
 #[derive(Deserialize)]
 pub struct Input {
@@ -25,7 +26,7 @@ pub enum Output {
     AccessDenied,
 }
 
-pub async fn run(state: impl AppRequest, input: Input) -> Output {
+pub async fn run(state: AppRequest, input: Input) -> Output {
     let store = state.get_store().await;
 
     match store.sessions.get(&input.session_id) {
@@ -47,6 +48,6 @@ pub async fn run(state: impl AppRequest, input: Input) -> Output {
             auth_user: None,
             last_ping: *last_seen,
         }),
-        None => return Output::AccessDenied,
+        None => Output::AccessDenied,
     }
 }

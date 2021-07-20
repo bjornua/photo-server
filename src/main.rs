@@ -1,56 +1,42 @@
+#![allow(dead_code)]
 mod app_state;
 mod lib;
 mod permission;
 mod routes;
 mod server;
 
-use argh::FromArgs;
 use async_std::task;
-use std::net::{AddrParseError, SocketAddr, SocketAddrV4};
+use std::env;
+use std::path::PathBuf;
 
-const DEFAULT_ADDR: std::net::Ipv4Addr = std::net::Ipv4Addr::LOCALHOST;
+use crate::lib::config::load_config_file;
 
 fn main() {
     match main_result() {
-        Ok(()) => std::process::exit(0),
+        Ok(()) => async_std::process::exit(0),
         Err(e) => {
             println!("Error:");
             println!("{:#?}", e);
-            std::process::exit(2)
+            async_std::process::exit(2)
         }
     }
 }
 
 fn main_result() -> Result<(), MainError> {
-    let args: Args = argh::from_env();
-    let ip = args
-        .ip
-        .map(|ip| ip.parse())
-        .unwrap_or(Ok(DEFAULT_ADDR))
-        .map_err(MainError::AddrParseError)?;
-    let port = args.port.unwrap_or(3000);
-    let socket = SocketAddr::V4(SocketAddrV4::new(ip, port));
+    let config_file_path = match env::args().nth(1) {
+        Some(path) => PathBuf::from(path),
+        None => panic!("Missing PATH command line argument"),
+    };
 
-    println!("Starting server: http://{}/", socket);
-    task::block_on(server::run(socket)).map_err(MainError::ServerError)?;
+    let config = task::block_on(load_config_file(&config_file_path));
+
+    println!("Starting server: http://{}:{}/", config.ip, config.port);
+    task::block_on(server::run(config)).map_err(MainError::ServerError)?;
 
     Ok(())
 }
 
-#[derive(FromArgs)]
-/// Start server
-struct Args {
-    /// the port of the http server
-    #[argh(option)]
-    port: Option<u16>,
-
-    /// the ip address of the http server
-    #[argh(option)]
-    ip: Option<String>,
-}
-
 #[derive(Debug)]
 enum MainError {
-    AddrParseError(AddrParseError),
     ServerError(tide::Error),
 }

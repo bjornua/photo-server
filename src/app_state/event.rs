@@ -1,3 +1,4 @@
+use crate::lib::file;
 use crate::lib::id::Id;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -29,6 +30,12 @@ pub enum Event {
     UserUpdatePassword {
         user_id: Id,
         password: String,
+    },
+    UploadCreated {
+        upload_id: Id,
+        user_id: Id,
+        type_: file::Type,
+        size: u64,
     },
 }
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

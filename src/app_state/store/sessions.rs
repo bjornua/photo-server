@@ -1,12 +1,12 @@
-use std::{
-    collections::HashMap,
-    hash::{Hash, Hasher},
-    sync::Weak,
-};
+use async_std::sync::Weak;
+use std::collections::hash_map;
+use std::hash::Hash;
+use std::hash::Hasher;
 
 use async_std::sync::RwLock;
 
-use crate::lib::{authentication::Authentication, id::Id};
+use crate::lib::authentication::Authentication;
+use crate::lib::id::Id;
 
 use super::users::User;
 
@@ -29,18 +29,12 @@ impl PartialEq for Session {
 }
 impl Eq for Session {}
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Sessions {
-    inner: HashMap<Id, Session>,
+    inner: hash_map::HashMap<Id, Session>,
 }
 
 impl Sessions {
-    pub fn new() -> Self {
-        Self {
-            inner: HashMap::new(),
-        }
-    }
-
     pub fn create(&mut self, token: Id, date: chrono::DateTime<chrono::Utc>) {
         let session = Session {
             authentication: Authentication::NotAuthenticated,
@@ -49,10 +43,10 @@ impl Sessions {
         };
         let entry = self.inner.entry(session.token.clone());
         match entry {
-            std::collections::hash_map::Entry::Occupied(_) => {
+            hash_map::Entry::Occupied(_) => {
                 panic!("Session exists")
             }
-            std::collections::hash_map::Entry::Vacant(e) => e.insert(session),
+            hash_map::Entry::Vacant(e) => e.insert(session),
         };
     }
 
