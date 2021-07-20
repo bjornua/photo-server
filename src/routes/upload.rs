@@ -1,5 +1,4 @@
 use crate::app_state::event::Event;
-use crate::app_state::log::Writer;
 use crate::app_state::AppRequest;
 use crate::app_state::AppState;
 use crate::lib::authentication::get_user;
@@ -22,11 +21,11 @@ pub enum Output {
     InternalServerError,
 }
 
-pub async fn handle<T: Writer>(req: Request<AppState<T>>) -> tide::Result<Response> {
+pub async fn handle(req: Request<AppState>) -> tide::Result<Response> {
     encode_response(handle_inner(req).await)
 }
 
-pub async fn handle_inner<T: Writer>(mut req: Request<AppState<T>>) -> Output {
+pub async fn handle_inner(mut req: Request<AppState>) -> Output {
     let state = req.state().clone().into_request_state_current_time();
 
     let store = state.get_store().await;
@@ -77,7 +76,7 @@ pub async fn handle_inner<T: Writer>(mut req: Request<AppState<T>>) -> Output {
         })
         .await;
 
-    return Output::Success { upload_id };
+    Output::Success { upload_id }
 }
 
 #[cfg(test)]

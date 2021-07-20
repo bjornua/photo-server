@@ -45,28 +45,26 @@ pub async fn run(state: impl AppRequest, input: Input) -> Output {
         })
         .await;
 
-    return Output::Success;
+    Output::Success
 }
 
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
-    use std::path::PathBuf;
-
     use super::run;
     use super::Input;
     use super::Output;
 
     use crate::app_state::event::Event;
-    use crate::app_state::log;
     use crate::app_state::AppRequest;
-    use crate::app_state::AppState;
     use crate::lib::id::Id;
+    use crate::lib::testutils;
 
     #[async_std::test]
     async fn test_run_unknown_session() {
-        let state = AppState::new(log::null::Writer {}, PathBuf::from("./uploads"))
+        let state = testutils::test_state()
+            .await
             .into_request_state_current_time();
         let result = run(
             state,

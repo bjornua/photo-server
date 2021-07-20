@@ -43,17 +43,15 @@ pub fn get_authentication(headers: &Headers, store: &Store) -> Authentication {
 }
 
 pub async fn get_user(headers: &Headers, store: &Store) -> Option<Arc<RwLock<User>>> {
-    return get_authentication(headers, &*store).get_user();
+    get_authentication(headers, &*store).get_user()
 }
 
 #[cfg(test)]
 mod tests {
     use crate::app_state::event::Event;
-    use crate::app_state::log;
     use crate::app_state::AppRequest;
-    use crate::app_state::AppState;
     use crate::lib::id::Id;
-    use std::path::PathBuf;
+    use crate::lib::testutils;
     use std::str::FromStr;
     use tide::http::Url;
 
@@ -76,8 +74,10 @@ mod tests {
         let mut request = tide::http::Request::new(tide::http::Method::Post, url);
 
         request.insert_header("Authorization", "Bearer 3wB4St9NzSaC4r6ouj56eyRku22n");
-        let state = AppState::new(log::null::Writer {}, PathBuf::from("./uploads"))
+        let state = testutils::test_state()
+            .await
             .into_request_state_current_time();
+
         let state = state
             .write(Event::SessionCreate {
                 session_id: Id::from_str("3wB4St9NzSaC4r6ouj56eyRku22n").unwrap(),

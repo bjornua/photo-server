@@ -43,9 +43,9 @@ pub async fn run(state: impl AppRequest, input: Input) -> Output {
 
     let target_user = target_user.read().await;
 
-    return Output::Success {
+    Output::Success {
         id: input.user_id,
         name: target_user.name.clone(),
         handle: target_user.handle.clone(),
-    };
+    }
 }

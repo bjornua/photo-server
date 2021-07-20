@@ -1,24 +1,21 @@
-#[cfg(test)]
-use crate::app_state::log;
-
-#[cfg(test)]
-use crate::app_state::AppRequest;
-
-#[cfg(test)]
+use crate::app_state::blobs;
 use crate::app_state::event::Event;
-
-#[cfg(test)]
+use crate::app_state::log;
+use crate::app_state::AppRequest;
 use crate::app_state::AppState;
-
-#[cfg(test)]
 use crate::lib::id::Id;
-
-#[cfg(test)]
 use std::str::FromStr;
 
-#[cfg(test)]
-pub async fn base_state() -> AppState<log::null::Writer> {
-    let app_state = AppState::new(log::null::Writer {});
+pub async fn test_state() -> AppState {
+    let log_writer = log::Log::Memory(log::memory::Log::new().await);
+    let blobs = blobs::Blobs::Memory(blobs::memory::Blobs::new().await);
+    let app_state = AppState::new(log_writer.into_writer().await, blobs);
+    app_state
+}
+
+pub async fn base_state() -> AppState {
+    let app_state = test_state().await;
+
     let state = app_state.clone().into_request_state_current_time();
     state
         .write(Event::SessionCreate {

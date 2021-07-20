@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 mod app_state;
 mod lib;
 mod permission;

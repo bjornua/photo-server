@@ -1,49 +1,58 @@
+pub mod blobs;
 pub mod event;
 pub mod log;
 pub mod store;
 
+use async_std::stream::StreamExt;
 use async_std::sync::Arc;
 use async_std::sync::Mutex;
 use async_std::sync::RwLock;
 use async_std::sync::RwLockReadGuard;
 use event::Event;
-use std::path::PathBuf;
 
 use crate::app_state::event::DateEvent;
+use crate::app_state::store::Store;
 
-pub struct AppState<L: log::Writer> {
-    upload_dir: Arc<PathBuf>,
+pub struct AppState {
+    blob_store: Arc<Mutex<blobs::Blobs>>,
     store: Arc<RwLock<store::Store>>,
-    logger: Arc<Mutex<L>>,
+    log_writer: Arc<Mutex<log::LogWriter>>,
 }
 
-impl<L: log::Writer> Clone for AppState<L> {
+impl Clone for AppState {
     fn clone(&self) -> Self {
         Self {
-            upload_dir: self.upload_dir.clone(),
+            blob_store: self.blob_store.clone(),
             store: self.store.clone(),
-            logger: self.logger.clone(),
+            log_writer: self.log_writer.clone(),
         }
     }
 }
 
-impl<L: log::Writer> AppState<L> {
-    pub fn new(logger: L, upload_dir: PathBuf) -> Self {
+impl AppState {
+    pub fn new(logger: log::LogWriter, blob_store: blobs::Blobs) -> Self {
         Self {
-            upload_dir: Arc::new(upload_dir),
-            store: Arc::new(RwLock::new(store::Store::new())),
-            logger: Arc::new(Mutex::new(logger)),
+            blob_store: Arc::new(Mutex::new(blob_store)),
+            store: Default::default(),
+            log_writer: Arc::new(Mutex::new(logger)),
+        }
+    }
+    pub fn new_with_store(store: Store, logger: log::LogWriter, blob_store: blobs::Blobs) -> Self {
+        Self {
+            blob_store: Arc::new(Mutex::new(blob_store)),
+            store: Arc::new(RwLock::new(store)),
+            log_writer: Arc::new(Mutex::new(logger)),
         }
     }
 
-    pub fn into_app_request(self, date: chrono::DateTime<chrono::Utc>) -> AppRequestStore<L> {
+    pub fn into_app_request(self, date: chrono::DateTime<chrono::Utc>) -> AppRequestStore {
         AppRequestStore {
             app_state: self,
             date,
         }
     }
 
-    pub fn into_request_state_current_time(self) -> AppRequestStore<L> {
+    pub fn into_request_state_current_time(self) -> AppRequestStore {
         self.into_app_request(chrono::Utc::now())
     }
 
@@ -59,22 +68,22 @@ impl<L: log::Writer> AppState<L> {
     }
 
     pub async fn write(self, event: DateEvent) -> Self {
-        self.logger.lock().await.write(&event).await;
+        self.log_writer.lock().await.write(&event).await;
         self.write_unlogged(event).await
-    }
-
-    // We take and return the value here to discourage deadlocks
-    pub async fn replay(mut self, mut reader: log::file::Reader) -> Self {
-        while let Some(test) = reader.next().await {
-            self = self.write_unlogged(test).await;
-        }
-        self
     }
 }
 
+pub async fn create_store_from_log(reader: &mut log::LogReader) -> Store {
+    let mut store = Store::default();
+    while let Some(event) = reader.next().await {
+        store.on_event(event.unwrap()).await;
+    }
+    store
+}
+
 #[derive(Clone)]
-pub struct AppRequestStore<L: log::Writer> {
-    app_state: AppState<L>,
+pub struct AppRequestStore {
+    app_state: AppState,
     date: chrono::DateTime<chrono::Utc>,
 }
 
@@ -85,7 +94,7 @@ pub trait AppRequest {
 }
 
 #[async_trait::async_trait]
-impl<L: log::Writer> AppRequest for AppRequestStore<L> {
+impl AppRequest for AppRequestStore {
     async fn get_store<'a>(&'_ self) -> RwLockReadGuard<'_, store::Store> {
         self.app_state.get_store().await
     }
@@ -98,6 +107,6 @@ impl<L: log::Writer> AppRequest for AppRequestStore<L> {
                 kind: event,
             })
             .await;
-        return self;
+        self
     }
 }

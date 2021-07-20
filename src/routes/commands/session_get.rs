@@ -48,6 +48,6 @@ pub async fn run(state: impl AppRequest, input: Input) -> Output {
             auth_user: None,
             last_ping: *last_seen,
         }),
-        None => return Output::AccessDenied,
+        None => Output::AccessDenied,
     }
 }

@@ -21,5 +21,5 @@ pub async fn run(state: impl AppRequest, _input: Input) -> Output {
         })
         .await;
 
-    return Output::Success { session_id };
+    Output::Success { session_id }
 }

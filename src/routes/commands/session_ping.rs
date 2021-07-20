@@ -32,7 +32,7 @@ pub async fn run(state: impl AppRequest, input: Input) -> Output {
         })
         .await;
 
-    return Output::Success;
+    Output::Success
 }
 
 #[cfg(test)]
@@ -41,22 +41,21 @@ mod tests {
 
     use app_state::event::DateEvent;
     use app_state::event::Event;
-    use app_state::log;
     use chrono::TimeZone;
     use chrono::Utc;
-    use std::path::PathBuf;
 
     use super::run;
     use super::Input;
     use super::Output;
 
     use crate::app_state;
-    use crate::app_state::AppState;
     use crate::lib::id::Id;
+    use crate::lib::testutils;
 
     #[async_std::test]
     async fn test_run_unknown_session() {
-        let state = AppState::new(log::null::Writer {}, PathBuf::from("./uploads"))
+        let state = testutils::test_state()
+            .await
             .into_request_state_current_time();
         let session_id = Id::from_str("3zCD548f6YU7163rZ84ZGamWkQM").unwrap();
         let result = run(state, Input { session_id }).await;
@@ -65,7 +64,7 @@ mod tests {
 
     #[async_std::test]
     async fn test_run_success() {
-        let app_state = AppState::new(log::null::Writer {}, PathBuf::from("./uploads"));
+        let app_state = testutils::test_state().await;
         let app_state = app_state
             .write(DateEvent {
                 date: Utc.ymd(1970, 1, 1).and_hms_milli(0, 0, 1, 444),

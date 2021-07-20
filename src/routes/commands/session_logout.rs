@@ -30,7 +30,7 @@ pub async fn run(state: impl AppRequest, input: Input) -> Output {
         })
         .await;
 
-    return Output::Success;
+    Output::Success
 }
 
 #[cfg(test)]

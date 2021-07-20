@@ -29,18 +29,12 @@ impl PartialEq for Session {
 }
 impl Eq for Session {}
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Sessions {
     inner: hash_map::HashMap<Id, Session>,
 }
 
 impl Sessions {
-    pub fn new() -> Self {
-        Self {
-            inner: hash_map::HashMap::new(),
-        }
-    }
-
     pub fn create(&mut self, token: Id, date: chrono::DateTime<chrono::Utc>) {
         let session = Session {
             authentication: Authentication::NotAuthenticated,

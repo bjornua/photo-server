@@ -11,18 +11,12 @@ pub struct Upload {
     pub date_uploaded: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Uploads {
     inner: HashMap<Id, Upload>,
 }
 
 impl Uploads {
-    pub fn new() -> Self {
-        Self {
-            inner: HashMap::new(),
-        }
-    }
-
     pub fn create(&mut self, upload: Upload) {
         let entry = self.inner.entry(upload.id.clone());
         match entry {

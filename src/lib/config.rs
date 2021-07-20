@@ -1,14 +1,14 @@
+use serde::Deserialize;
 use std::net::Ipv4Addr;
 use std::path::Path;
-
-use serde::Deserialize;
 use std::path::PathBuf;
 
 #[derive(Deserialize)]
 pub struct Config {
     pub port: u16,
     pub ip: Ipv4Addr,
-    pub upload_dir: PathBuf,
+    pub blobs_dir: PathBuf,
+    pub tmp_dir: PathBuf,
     pub db_file: PathBuf,
 }
 

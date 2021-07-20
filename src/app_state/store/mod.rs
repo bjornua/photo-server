@@ -8,7 +8,7 @@ use async_std::sync::Arc;
 
 use crate::app_state::event::DateEvent;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Store {
     pub users: users::Users,
     pub sessions: sessions::Sessions,
@@ -16,14 +16,6 @@ pub struct Store {
 }
 
 impl Store {
-    pub fn new() -> Self {
-        Self {
-            sessions: sessions::Sessions::new(),
-            users: users::Users::new(),
-            uploads: uploads::Uploads::new(),
-        }
-    }
-
     pub async fn on_event(&mut self, command: DateEvent) {
         match command.kind {
             Event::SessionLogin {

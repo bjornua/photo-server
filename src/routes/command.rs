@@ -1,4 +1,3 @@
-use crate::app_state::log::Writer;
 use crate::lib::http::encode_response;
 use crate::routes::commands;
 
@@ -40,7 +39,7 @@ enum Output {
     UserUpdatePassword(commands::user_update_password::Output),
 }
 
-pub async fn handle<T: Writer>(mut req: Request<AppState<T>>) -> tide::Result<Response> {
+pub async fn handle(mut req: Request<AppState>) -> tide::Result<Response> {
     let command_input: Input = match req.take_body().into_json().await {
         Ok(input) => input,
         Err(err) => {
@@ -88,5 +87,5 @@ pub async fn handle<T: Writer>(mut req: Request<AppState<T>>) -> tide::Result<Re
         }
     };
 
-    return encode_response(result);
+    encode_response(result)
 }

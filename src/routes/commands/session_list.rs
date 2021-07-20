@@ -49,5 +49,5 @@ pub async fn run(state: impl AppRequest, input: Input) -> Output {
         });
     }
 
-    return Output::Success(sessions);
+    Output::Success(sessions)
 }
