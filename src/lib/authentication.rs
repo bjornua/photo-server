@@ -49,7 +49,6 @@ pub async fn get_user(headers: &Headers, store: &Store) -> Option<Arc<RwLock<Use
 #[cfg(test)]
 mod tests {
     use crate::app_state::event::Event;
-    use crate::app_state::AppRequest;
     use crate::lib::id::Id;
     use crate::lib::testutils;
     use std::str::FromStr;

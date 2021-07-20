@@ -1,14 +1,13 @@
 use crate::app_state::blobs;
 use crate::app_state::event::Event;
 use crate::app_state::log;
-use crate::app_state::AppRequest;
 use crate::app_state::AppState;
 use crate::lib::id::Id;
 use std::str::FromStr;
 
 pub async fn test_state() -> AppState {
     let log_writer = log::Log::Memory(log::memory::Log::new().await);
-    let blobs = blobs::Blobs::Memory(blobs::memory::Blobs::new().await);
+    let blobs = blobs::Blobs::Memory(blobs::memory::Blobs::default());
     let app_state = AppState::new(log_writer.into_writer().await, blobs);
     app_state
 }

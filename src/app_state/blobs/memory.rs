@@ -1,6 +1,7 @@
 use crate::lib::id::Id;
 use async_std::io;
 use async_std::io::Cursor;
+use async_std::sync::RwLock;
 use std::collections::HashMap;
 use std::pin::Pin;
 
@@ -8,23 +9,23 @@ enum WriteError {}
 
 #[derive(Default)]
 pub struct Blobs {
-    blobs: HashMap<Id, Vec<u8>>,
+    blobs: RwLock<HashMap<Id, Vec<u8>>>,
 }
+
+#[derive(Debug)]
 pub enum BlobsReadError {
     NotFound,
 }
+#[derive(Debug)]
 pub enum BlobsDeleteError {
     NotFound,
 }
 
 impl Blobs {
-    pub async fn new() -> Blobs {
-        Blobs {
-            blobs: HashMap::new(),
-        }
-    }
     pub async fn read(&self, id: Id) -> Result<BlobReader, BlobsReadError> {
         self.blobs
+            .read()
+            .await
             .get(&id)
             .map(|vec| BlobReader {
                 blob: Cursor::new(vec.clone()),
@@ -32,9 +33,12 @@ impl Blobs {
             .ok_or(BlobsReadError::NotFound)
     }
 
-    pub async fn insert(&mut self, blob_writer: BlobWriter) -> Id {
+    pub async fn insert(&self, blob_writer: BlobWriter) -> Id {
         let id = Id::new();
-        self.blobs.insert(id.clone(), blob_writer.blob.into_inner());
+        self.blobs
+            .write()
+            .await
+            .insert(id.clone(), blob_writer.blob.into_inner());
         id
     }
 
@@ -44,8 +48,10 @@ impl Blobs {
         }
     }
 
-    pub async fn delete(&mut self, id: Id) -> Result<(), BlobsDeleteError> {
+    pub async fn delete(&self, id: Id) -> Result<(), BlobsDeleteError> {
         self.blobs
+            .write()
+            .await
             .remove(&id)
             .map(|_| ())
             .ok_or(BlobsDeleteError::NotFound)

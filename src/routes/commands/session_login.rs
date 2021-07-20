@@ -19,7 +19,7 @@ pub enum Output {
     SessionNotFound,
 }
 
-pub async fn run(state: impl AppRequest, input: Input) -> Output {
+pub async fn run(state: AppRequest, input: Input) -> Output {
     let store = state.get_store().await;
 
     if store.sessions.get(&input.session_id).is_none() {
@@ -57,7 +57,6 @@ mod tests {
     use super::Output;
 
     use crate::app_state::event::Event;
-    use crate::app_state::AppRequest;
     use crate::lib::id::Id;
     use crate::lib::testutils;
 

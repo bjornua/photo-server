@@ -14,15 +14,19 @@ pub struct Blobs {
     tmp_path: path::PathBuf,
 }
 
+#[derive(Debug)]
 pub enum BlobsReadError {
     OpenError(io::Error),
 }
+#[derive(Debug)]
 pub enum BlobsNewBlobError {
     OpenError(io::Error),
 }
+#[derive(Debug)]
 pub enum BlobsDeleteError {
     DeleteError(io::Error),
 }
+#[derive(Debug)]
 pub enum BlobsInsertError {
     OpenError(io::Error),
     RenameError(io::Error),
@@ -41,20 +45,20 @@ impl Blobs {
         let file = fs::OpenOptions::new()
             .read(true)
             .write(false)
-            .open(path)
+            .open(&path)
             .await
             .map_err(BlobsReadError::OpenError)?;
         Ok(BlobReader { id, file })
     }
 
-    pub async fn insert(&mut self, blob_writer: BlobWriter) -> Result<Id, BlobsInsertError> {
+    pub async fn insert(&self, blob_writer: BlobWriter) -> Result<Id, BlobsInsertError> {
         let id = Id::new();
         let path = self.blob_path.clone().join(id.to_string());
 
         // Just to make sure we are not overwriting something existing
-        fs::OpenOptions::new()
+        let _file = fs::OpenOptions::new()
             .read(false)
-            .write(false)
+            .write(true)
             .create_new(true)
             .open(&path)
             .await
@@ -82,7 +86,7 @@ impl Blobs {
         Ok(BlobWriter { path, file })
     }
 
-    pub async fn delete(&mut self, id: Id) -> Result<(), BlobsDeleteError> {
+    pub async fn delete(&self, id: Id) -> Result<(), BlobsDeleteError> {
         let path = self.blob_path.clone().join(id.to_string());
         fs::remove_file(path)
             .await

@@ -6,19 +6,24 @@ use crate::lib::id::Id;
 use async_std::io;
 
 pub enum Blobs {
-    Memory(memory::Blobs),
     File(file::Blobs),
+    Memory(memory::Blobs),
 }
+#[derive(Debug)]
 pub enum BlobsReadError {
-    Memory(memory::BlobsReadError),
     File(file::BlobsReadError),
+    Memory(memory::BlobsReadError),
 }
+#[derive(Debug)]
 pub enum BlobsNewBlobError {
     File(file::BlobsNewBlobError),
 }
+#[derive(Debug)]
 pub enum BlobsInsertError {
     File(file::BlobsInsertError),
 }
+
+#[derive(Debug)]
 pub enum BlobsDeleteError {
     File(file::BlobsDeleteError),
     Memory(memory::BlobsDeleteError),
@@ -40,7 +45,7 @@ impl Blobs {
         }
     }
 
-    pub async fn insert(&mut self, blob_writer: BlobWriter) -> Result<Id, BlobsInsertError> {
+    pub async fn insert(&self, blob_writer: BlobWriter) -> Result<Id, BlobsInsertError> {
         match (self, blob_writer) {
             (Blobs::Memory(blobs), BlobWriter::Memory(writer)) => Ok(blobs.insert(writer).await),
             (Blobs::File(blobs), BlobWriter::File(writer)) => {
@@ -60,7 +65,7 @@ impl Blobs {
                 .map_err(BlobsNewBlobError::File),
         }
     }
-    async fn delete(&mut self, id: Id) -> Result<(), BlobsDeleteError> {
+    async fn delete(&self, id: Id) -> Result<(), BlobsDeleteError> {
         match self {
             Blobs::Memory(blobs) => blobs.delete(id).await.map_err(BlobsDeleteError::Memory),
             Blobs::File(blobs) => blobs.delete(id).await.map_err(BlobsDeleteError::File),

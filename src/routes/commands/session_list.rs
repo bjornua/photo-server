@@ -23,7 +23,7 @@ pub enum Output {
     AccessDenied,
 }
 
-pub async fn run(state: impl AppRequest, input: Input) -> Output {
+pub async fn run(state: AppRequest, input: Input) -> Output {
     let state = state.get_store().await;
 
     let authentication = match state.sessions.get(&input.session_id) {

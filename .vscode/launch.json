@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": ["./testconfig.toml"],
             "cwd": "${workspaceFolder}"
         },
         {

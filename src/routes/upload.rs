@@ -1,5 +1,4 @@
 use crate::app_state::event::Event;
-use crate::app_state::AppRequest;
 use crate::app_state::AppState;
 use crate::lib::authentication::get_user;
 use crate::lib::http;
@@ -39,26 +38,12 @@ pub async fn handle_inner(mut req: Request<AppState>) -> Output {
         None => return Output::InvalidMimeType,
     };
 
-    let body = req.take_body();
+    let mut body = req.take_body();
 
-    let upload_id = Id::new();
-    let file_name = format!("./uploads/{}", upload_id);
+    let blobs = state.get_blobs();
+    let mut blob = blobs.new_blob().await.unwrap();
 
-    let file = match async_std::fs::OpenOptions::new()
-        .write(true)
-        .read(false)
-        .create_new(true)
-        .open(&file_name)
-        .await
-    {
-        Ok(file) => file,
-        Err(e) => {
-            println!("Could not create file {:?}: {:?}", file_name, e);
-            return Output::InternalServerError;
-        }
-    };
-
-    let file_size = match copy(body, file).await {
+    let file_size = match copy(&mut body, &mut blob).await {
         Ok(size) => size,
         Err(e) => {
             println!("Body to file copy error: {:?}", e);
@@ -67,23 +52,24 @@ pub async fn handle_inner(mut req: Request<AppState>) -> Output {
     };
     drop(store);
 
+    let blob_id = blobs.insert(blob).await.unwrap();
+
     state
         .write(Event::UploadCreated {
             user_id,
             type_: file_type,
             size: file_size,
-            upload_id: upload_id.clone(),
+            upload_id: blob_id.clone(),
         })
         .await;
 
-    Output::Success { upload_id }
+    Output::Success { upload_id: blob_id }
 }
 
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
-    use crate::app_state::AppRequest;
     use tide::http::Method;
     use tide::http::Request;
     use tide::http::Url;
