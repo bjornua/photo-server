@@ -1,6 +1,7 @@
 pub mod files;
 pub mod photos;
 pub mod sessions;
+pub mod uploads;
 pub mod users;
 
 use crate::app_state::event::Event;

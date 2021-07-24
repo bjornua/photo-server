@@ -138,24 +138,24 @@ mod tests {
             Url::parse(&format!("http://example.org/file/{}", file_id)).unwrap(),
         );
 
+        request.insert_header("Authorization", "Bearer 3zCD548f6YU7163rZ84ZGamWkQM");
         request.insert_header("Content-Type", "image/jpeg");
 
         let mut response: tide::http::Response = app.respond(request).await.unwrap();
         let result: Output = response.body_json().await.unwrap();
 
-        match result {
-            Output::Success => (),
-            o => {
-                panic!("Unexpected output {:?}", o);
-            }
-        };
+        assert_eq!(result, Output::Success);
 
         let store = state.get_store().await;
         let upload = store.files.get(&file_id).unwrap();
+
         match upload {
             File::Waiting { .. } => panic!("Upload is waiting but should have finished"),
             File::Uploading { .. } => panic!("Upload is uploading but should have finished"),
-            File::Ready { size, .. } => {
+            File::Ready {
+                size, file_type, ..
+            } => {
+                assert_eq!(*file_type, crate::lib::file::Type::Jpg);
                 assert_eq!(*size, 0);
             }
         }
@@ -249,7 +249,6 @@ mod tests {
 
         let mut response: tide::http::Response = app.respond(request).await.unwrap();
         let result: Output = response.body_json().await.unwrap();
-
         assert_eq!(result, Output::Success);
     }
 }
