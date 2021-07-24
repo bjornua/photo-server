@@ -160,4 +160,96 @@ mod tests {
             }
         }
     }
+
+    #[async_std::test]
+    async fn test_run_wrong_mime_type() {
+        let app_state = base_state().await;
+
+        let state = app_state.clone().into_request_state_current_time();
+
+        let app = crate::server::make_app(app_state);
+        let file_id = Id::new();
+
+        state
+            .write(crate::app_state::event::Event::NewPhotoUpload {
+                photo_id: Id::new(),
+                file_id: file_id.clone(),
+                file_type: crate::lib::file::Type::Jpg,
+            })
+            .await;
+
+        let mut request = Request::new(
+            Method::Post,
+            Url::parse(&format!("http://example.org/file/{}", file_id)).unwrap(),
+        );
+
+        request.insert_header("Content-Type", "image/png");
+
+        let mut response: tide::http::Response = app.respond(request).await.unwrap();
+        let result: Output = response.body_json().await.unwrap();
+
+        assert_eq!(result, Output::WrongFileType);
+    }
+
+    #[async_std::test]
+    async fn test_run_size_exceeded() {
+        let app_state = base_state().await;
+
+        let state = app_state.clone().into_request_state_current_time();
+
+        let app = crate::server::make_app(app_state);
+        let file_id = Id::new();
+
+        state
+            .write(crate::app_state::event::Event::NewPhotoUpload {
+                photo_id: Id::new(),
+                file_id: file_id.clone(),
+                file_type: crate::lib::file::Type::Jpg,
+            })
+            .await;
+
+        let mut request = Request::new(
+            Method::Post,
+            Url::parse(&format!("http://example.org/file/{}", file_id)).unwrap(),
+        );
+        request.set_body(" ".repeat(5_000_001));
+
+        request.insert_header("Content-Type", "image/jpeg");
+
+        let mut response: tide::http::Response = app.respond(request).await.unwrap();
+        let result: Output = response.body_json().await.unwrap();
+
+        assert_eq!(result, Output::TooLarge);
+    }
+
+    #[async_std::test]
+    async fn test_run_max_size() {
+        let app_state = base_state().await;
+
+        let state = app_state.clone().into_request_state_current_time();
+
+        let app = crate::server::make_app(app_state);
+        let file_id = Id::new();
+
+        state
+            .write(crate::app_state::event::Event::NewPhotoUpload {
+                photo_id: Id::new(),
+                file_id: file_id.clone(),
+                file_type: crate::lib::file::Type::Jpg,
+            })
+            .await;
+
+        let mut request = Request::new(
+            Method::Post,
+            Url::parse(&format!("http://example.org/file/{}", file_id)).unwrap(),
+        );
+        request.set_body(" ".repeat(5_000_000));
+
+        request.insert_header("Content-Type", "image/jpeg");
+
+        let mut response: tide::http::Response = app.respond(request).await.unwrap();
+        let result: Output = response.body_json().await.unwrap();
+
+        assert_eq!(result, Output::Success);
+    }
 }
