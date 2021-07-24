@@ -125,13 +125,13 @@ mod tests {
         let app = crate::server::make_app(app_state);
         let file_id = Id::new();
 
-        // let state = state
-        //     .write(crate::app_state::event::Event::NewPhotoUpload {
-        //         photo_id: Id::new(),
-        //         file_id: file_id.clone(),
-        //         file_type: crate::lib::file::Type::Jpg,
-        //     })
-        //     .await;
+        let state = state
+            .write(crate::app_state::event::Event::NewPhotoUpload {
+                photo_id: Id::new(),
+                file_id: file_id.clone(),
+                file_type: crate::lib::file::Type::Jpg,
+            })
+            .await;
 
         let mut request = Request::new(
             Method::Post,
