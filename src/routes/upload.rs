@@ -1,11 +1,15 @@
+use std::str::FromStr;
+
 use crate::app_state::event::Event;
+use crate::app_state::store::files;
 use crate::app_state::AppState;
-use crate::lib::authentication::get_user;
+
 use crate::lib::http;
 use crate::lib::http::encode_response;
 use crate::lib::id::Id;
 use async_std::io::copy;
 
+use async_std::io::ReadExt;
 use serde::Deserialize;
 use serde::Serialize;
 use tide::Request;
@@ -14,10 +18,16 @@ use tide::Response;
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(tag = "type")]
 pub enum Output {
-    Success { upload_id: Id },
+    Success,
     NotAuthenticated,
+    InvalidId,
     InvalidMimeType,
     InternalServerError,
+    NotFound,
+    AlreadyUploading,
+    AlreadyUploaded,
+    WrongFileType,
+    TooLarge,
 }
 
 pub async fn handle(req: Request<AppState>) -> tide::Result<Response> {
@@ -27,55 +37,82 @@ pub async fn handle(req: Request<AppState>) -> tide::Result<Response> {
 pub async fn handle_inner(mut req: Request<AppState>) -> Output {
     let state = req.state().clone().into_request_state_current_time();
 
-    let store = state.get_store().await;
-    let user_id = match get_user(req.as_ref(), &store).await {
-        Some(user) => user.read().await.id.clone(),
-        None => return Output::NotAuthenticated,
+    let file_id = match Id::from_str(req.param("file_id").unwrap()) {
+        Ok(id) => id,
+        Err(_) => return Output::InvalidId,
     };
+
+    let (expected_file_type, maximum_size) = {
+        match state.get_store().await.files.get(&file_id) {
+            Some(files::File::Waiting {
+                file_type,
+                maximum_size,
+                ..
+            }) => (file_type.clone(), *maximum_size),
+            Some(files::File::Uploading { .. }) => return Output::AlreadyUploading,
+            Some(files::File::Ready { .. }) => return Output::AlreadyUploaded,
+            None => return Output::NotFound,
+        }
+    };
+
+    let state = state
+        .write(Event::FileUploadStart {
+            file_id: file_id.clone(),
+        })
+        .await;
 
     let file_type = match http::get_file_type(req.as_ref()) {
         Some(file_type) => file_type,
         None => return Output::InvalidMimeType,
     };
 
-    let mut body = req.take_body();
+    if file_type != expected_file_type {
+        return Output::WrongFileType;
+    }
+
+    let body = req.take_body();
 
     let blobs = state.get_blobs();
     let mut blob = blobs.new_blob().await.unwrap();
 
-    let file_size = match copy(&mut body, &mut blob).await {
+    // Read one byte more than max, so we can check it was exceeded
+    let mut body = body.take(maximum_size + 1);
+
+    let uploaded_size = match copy(&mut body, &mut blob).await {
         Ok(size) => size,
         Err(e) => {
             println!("Body to file copy error: {:?}", e);
             return Output::InternalServerError;
         }
     };
-    drop(store);
+
+    if uploaded_size > maximum_size {
+        return Output::TooLarge;
+    }
 
     let blob_id = blobs.insert(blob).await.unwrap();
 
     state
-        .write(Event::UploadCreated {
-            user_id,
-            type_: file_type,
-            size: file_size,
-            upload_id: blob_id.clone(),
+        .write(Event::FileReady {
+            file_id,
+            blob_id,
+            size: uploaded_size,
         })
         .await;
 
-    Output::Success { upload_id: blob_id }
+    Output::Success
 }
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+
+    use crate::app_state::store::files::File;
+    use crate::lib::id::Id;
+    use crate::lib::testutils::base_state;
 
     use tide::http::Method;
     use tide::http::Request;
     use tide::http::Url;
-
-    use crate::lib::id::Id;
-    use crate::lib::testutils::base_state;
 
     use super::Output;
 
@@ -86,33 +123,41 @@ mod tests {
         let state = app_state.clone().into_request_state_current_time();
 
         let app = crate::server::make_app(app_state);
+        let file_id = Id::new();
+
+        // let state = state
+        //     .write(crate::app_state::event::Event::NewPhotoUpload {
+        //         photo_id: Id::new(),
+        //         file_id: file_id.clone(),
+        //         file_type: crate::lib::file::Type::Jpg,
+        //     })
+        //     .await;
 
         let mut request = Request::new(
             Method::Post,
-            Url::parse("http://example.org/upload").unwrap(),
+            Url::parse(&format!("http://example.org/file/{}", file_id)).unwrap(),
         );
 
-        request.insert_header("Authorization", "Bearer 3zCD548f6YU7163rZ84ZGamWkQM");
         request.insert_header("Content-Type", "image/jpeg");
 
         let mut response: tide::http::Response = app.respond(request).await.unwrap();
         let result: Output = response.body_json().await.unwrap();
 
-        let upload_id = match result {
-            Output::Success { upload_id } => upload_id,
+        match result {
+            Output::Success => (),
             o => {
                 panic!("Unexpected output {:?}", o);
             }
         };
 
         let store = state.get_store().await;
-        let upload = store.uploads.get(&upload_id).unwrap();
-
-        assert_eq!(upload.type_, crate::lib::file::Type::Jpg);
-        assert_eq!(
-            upload.user_id,
-            Id::from_str("2bQFgyUNCCRUs8SitkgBG8L37KL1").unwrap()
-        );
-        assert_eq!(upload.size, 0);
+        let upload = store.files.get(&file_id).unwrap();
+        match upload {
+            File::Waiting { .. } => panic!("Upload is waiting but should have finished"),
+            File::Uploading { .. } => panic!("Upload is uploading but should have finished"),
+            File::Ready { size, .. } => {
+                assert_eq!(*size, 0);
+            }
+        }
     }
 }
