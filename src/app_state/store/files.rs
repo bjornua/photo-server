@@ -28,18 +28,6 @@ pub struct Files {
     inner: HashMap<Id, File>,
 }
 
-#[derive(Debug)]
-pub enum StartUploadError {
-    NotFound,
-    NotWaiting,
-}
-
-#[derive(Debug)]
-pub enum FinishUploadingError {
-    NotFound,
-    NotUploading,
-}
-
 impl Files {
     pub fn upload_new(
         &mut self,

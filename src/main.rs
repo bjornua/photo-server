@@ -25,7 +25,7 @@ fn main() {
 fn main_result() -> Result<(), MainError> {
     let config_file_path = match env::args().nth(1) {
         Some(path) => PathBuf::from(path),
-        None => panic!("Missing PATH command line argument"),
+        None => panic!("Usage: photo-server PATH_TO_CONFIG"),
     };
 
     let config = task::block_on(load_config_file(&config_file_path));

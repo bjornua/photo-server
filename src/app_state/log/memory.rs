@@ -7,7 +7,7 @@ use std::vec::IntoIter;
 use crate::app_state::event::DateEvent;
 
 /**
-    Used for testing
+    Non-persisting log storage used for testing
 */
 
 pub struct Log {
