@@ -1,9 +1,10 @@
+pub mod files;
+pub mod photos;
 pub mod sessions;
 pub mod uploads;
 pub mod users;
 
 use crate::app_state::event::Event;
-use crate::app_state::store::uploads::Upload;
 use async_std::sync::Arc;
 
 use crate::app_state::event::DateEvent;
@@ -12,7 +13,8 @@ use crate::app_state::event::DateEvent;
 pub struct Store {
     pub users: users::Users,
     pub sessions: sessions::Sessions,
-    pub uploads: uploads::Uploads,
+    pub files: files::Uploads,
+    pub photos: photos::Photos,
 }
 
 impl Store {
@@ -25,9 +27,15 @@ impl Store {
                 let user = self.users.get_by_id(&user_id).unwrap();
                 self.sessions.login(&session_id, Arc::downgrade(&user));
             }
-            Event::SessionPing { session_id } => self.sessions.ping(&session_id, command.date),
-            Event::SessionLogout { session_id } => self.sessions.logout(&session_id),
-            Event::SessionCreate { session_id } => self.sessions.create(session_id, command.date),
+            Event::SessionPing { session_id } => {
+                self.sessions.ping(&session_id, command.date);
+            }
+            Event::SessionLogout { session_id } => {
+                self.sessions.logout(&session_id);
+            }
+            Event::SessionCreate { session_id } => {
+                self.sessions.create(session_id, command.date);
+            }
             Event::UserCreate {
                 user_id: id,
                 name,
@@ -53,20 +61,23 @@ impl Store {
             Event::UserUpdatePassword { user_id, password } => {
                 self.users.update_password(user_id, password).await.unwrap();
             }
-            Event::UploadCreated {
-                user_id,
-                upload_id: file_id,
-                type_: file_type,
-                size: file_size,
-            } => self.uploads.create({
-                Upload {
-                    id: file_id,
-                    user_id,
-                    type_: file_type,
-                    size: file_size,
-                    date_uploaded: command.date,
-                }
-            }),
+            Event::UploadBegin {
+                file_type,
+                upload_id,
+            } => {
+                self.files.upload_start(upload_id, file_type, command.date);
+            }
+            Event::UploadFinish {
+                upload_id,
+                size,
+                blob_id,
+            } => {
+                self.files.upload_finish(upload_id, blob_id, size);
+            }
+            Event::PhotoAdd {
+                upload_id: _,
+                size: _,
+            } => todo!(),
         }
     }
 }
