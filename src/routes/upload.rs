@@ -1,7 +1,4 @@
-use std::str::FromStr;
-
 use crate::app_state::event::Event;
-use crate::app_state::store::files;
 use crate::app_state::AppState;
 
 use crate::lib::http;
@@ -9,7 +6,6 @@ use crate::lib::http::encode_response;
 use crate::lib::id::Id;
 use async_std::io::copy;
 
-use async_std::io::ReadExt;
 use serde::Deserialize;
 use serde::Serialize;
 use tide::Request;
@@ -37,46 +33,24 @@ pub async fn handle(req: Request<AppState>) -> tide::Result<Response> {
 pub async fn handle_inner(mut req: Request<AppState>) -> Output {
     let state = req.state().clone().into_request_state_current_time();
 
-    let file_id = match Id::from_str(req.param("file_id").unwrap()) {
-        Ok(id) => id,
-        Err(_) => return Output::InvalidId,
-    };
-
-    let (expected_file_type, maximum_size) = {
-        match state.get_store().await.files.get(&file_id) {
-            Some(files::File::Waiting {
-                file_type,
-                maximum_size,
-                ..
-            }) => (file_type.clone(), *maximum_size),
-            Some(files::File::Uploading { .. }) => return Output::AlreadyUploading,
-            Some(files::File::Ready { .. }) => return Output::AlreadyUploaded,
-            None => return Output::NotFound,
-        }
-    };
-
-    let state = state
-        .write(Event::FileUploadStart {
-            file_id: file_id.clone(),
-        })
-        .await;
-
     let file_type = match http::get_file_type(req.as_ref()) {
         Some(file_type) => file_type,
         None => return Output::InvalidMimeType,
     };
 
-    if file_type != expected_file_type {
-        return Output::WrongFileType;
-    }
+    let upload_id = Id::new();
 
-    let body = req.take_body();
+    let state = state
+        .write(Event::UploadBegin {
+            upload_id: upload_id.clone(),
+            file_type: file_type,
+        })
+        .await;
+
+    let mut body = req.take_body();
 
     let blobs = state.get_blobs();
     let mut blob = blobs.new_blob().await.unwrap();
-
-    // Read one byte more than max, so we can check it was exceeded
-    let mut body = body.take(maximum_size + 1);
 
     let uploaded_size = match copy(&mut body, &mut blob).await {
         Ok(size) => size,
@@ -86,15 +60,11 @@ pub async fn handle_inner(mut req: Request<AppState>) -> Output {
         }
     };
 
-    if uploaded_size > maximum_size {
-        return Output::TooLarge;
-    }
-
     let blob_id = blobs.insert(blob).await.unwrap();
 
     state
-        .write(Event::FileReady {
-            file_id,
+        .write(Event::UploadFinish {
+            upload_id,
             blob_id,
             size: uploaded_size,
         })
@@ -111,7 +81,7 @@ mod tests {
     use std::task::Context;
     use std::task::Poll;
 
-    use crate::app_state::store::files::File;
+    use crate::app_state::store::files::Upload;
     use crate::lib::id::Id;
     use crate::lib::testutils::base_state;
 
@@ -132,15 +102,6 @@ mod tests {
 
         let app = crate::server::make_app(app_state);
         let file_id = Id::from_str("FzXiG9uZVyTPn4NRQ3HGV6B3eCK").unwrap();
-        let photo_id = Id::from_str("2xiq7PGBLimNVPWg7M3Q62uJ7JYU").unwrap();
-
-        let state = state
-            .write(crate::app_state::event::Event::NewPhotoUpload {
-                photo_id,
-                file_id: file_id.clone(),
-                file_type: crate::lib::file::Type::Jpg,
-            })
-            .await;
 
         let mut request = Request::new(
             Method::Post,
@@ -159,9 +120,8 @@ mod tests {
         let upload = store.files.get(&file_id).unwrap();
 
         match upload {
-            File::Waiting { .. } => panic!("Upload is waiting but should have finished"),
-            File::Uploading { .. } => panic!("Upload is uploading but should have finished"),
-            File::Ready {
+            Upload::Uploading { .. } => panic!("Upload is uploading but should have finished"),
+            Upload::Ready {
                 size, file_type, ..
             } => {
                 assert_eq!(*file_type, crate::lib::file::Type::Jpg);
@@ -174,19 +134,8 @@ mod tests {
     async fn test_run_wrong_mime_type() {
         let app_state = base_state().await;
 
-        let state = app_state.clone().into_request_state_current_time();
-
         let app = crate::server::make_app(app_state);
         let file_id = Id::from_str("FzXiG9uZVyTPn4NRQ3HGV6B3eCK").unwrap();
-        let photo_id = Id::from_str("2xiq7PGBLimNVPWg7M3Q62uJ7JYU").unwrap();
-
-        state
-            .write(crate::app_state::event::Event::NewPhotoUpload {
-                photo_id,
-                file_id: file_id.clone(),
-                file_type: crate::lib::file::Type::Jpg,
-            })
-            .await;
 
         let mut request = Request::new(
             Method::Post,
@@ -205,19 +154,8 @@ mod tests {
     async fn test_run_size_exceeded() {
         let app_state = base_state().await;
 
-        let state = app_state.clone().into_request_state_current_time();
-
         let app = crate::server::make_app(app_state);
         let file_id = Id::from_str("FzXiG9uZVyTPn4NRQ3HGV6B3eCK").unwrap();
-        let photo_id = Id::from_str("2xiq7PGBLimNVPWg7M3Q62uJ7JYU").unwrap();
-
-        state
-            .write(crate::app_state::event::Event::NewPhotoUpload {
-                photo_id,
-                file_id: file_id.clone(),
-                file_type: crate::lib::file::Type::Jpg,
-            })
-            .await;
 
         let mut request = Request::new(
             Method::Post,
@@ -237,19 +175,8 @@ mod tests {
     async fn test_run_max_size() {
         let app_state = base_state().await;
 
-        let state = app_state.clone().into_request_state_current_time();
-
         let app = crate::server::make_app(app_state);
         let file_id = Id::from_str("FzXiG9uZVyTPn4NRQ3HGV6B3eCK").unwrap();
-        let photo_id = Id::from_str("2xiq7PGBLimNVPWg7M3Q62uJ7JYU").unwrap();
-
-        state
-            .write(crate::app_state::event::Event::NewPhotoUpload {
-                photo_id,
-                file_id: file_id.clone(),
-                file_type: crate::lib::file::Type::Jpg,
-            })
-            .await;
 
         let mut request = Request::new(
             Method::Post,
@@ -267,19 +194,9 @@ mod tests {
     #[async_std::test]
     async fn test_run_invalid_mime_type() {
         let app_state = base_state().await;
-        let state = app_state.clone().into_request_state_current_time();
 
         let app = crate::server::make_app(app_state);
         let file_id = Id::from_str("FzXiG9uZVyTPn4NRQ3HGV6B3eCK").unwrap();
-        let photo_id = Id::from_str("2xiq7PGBLimNVPWg7M3Q62uJ7JYU").unwrap();
-
-        state
-            .write(crate::app_state::event::Event::NewPhotoUpload {
-                photo_id,
-                file_id: file_id.clone(),
-                file_type: crate::lib::file::Type::Jpg,
-            })
-            .await;
 
         let mut request = Request::new(
             Method::Post,
@@ -296,19 +213,8 @@ mod tests {
     #[async_std::test]
     async fn test_run_invalid_id() {
         let app_state = base_state().await;
-        let state = app_state.clone().into_request_state_current_time();
 
         let app = crate::server::make_app(app_state);
-        let file_id = Id::from_str("FzXiG9uZVyTPn4NRQ3HGV6B3eCK").unwrap();
-        let photo_id = Id::from_str("2xiq7PGBLimNVPWg7M3Q62uJ7JYU").unwrap();
-
-        state
-            .write(crate::app_state::event::Event::NewPhotoUpload {
-                photo_id,
-                file_id: file_id.clone(),
-                file_type: crate::lib::file::Type::Jpg,
-            })
-            .await;
 
         let mut request = Request::new(
             Method::Post,
@@ -344,19 +250,9 @@ mod tests {
     #[async_std::test]
     async fn test_run_already_uploaded() {
         let app_state = base_state().await;
-        let state = app_state.clone().into_request_state_current_time();
 
         let app = crate::server::make_app(app_state);
         let file_id = Id::from_str("FzXiG9uZVyTPn4NRQ3HGV6B3eCK").unwrap();
-        let photo_id = Id::from_str("2xiq7PGBLimNVPWg7M3Q62uJ7JYU").unwrap();
-
-        state
-            .write(crate::app_state::event::Event::NewPhotoUpload {
-                photo_id,
-                file_id: file_id.clone(),
-                file_type: crate::lib::file::Type::Jpg,
-            })
-            .await;
 
         let mut request = Request::new(
             Method::Post,
@@ -384,19 +280,9 @@ mod tests {
     #[async_std::test]
     async fn test_run_already_uploading() {
         let app_state = base_state().await;
-        let state = app_state.clone().into_request_state_current_time();
 
         let app = crate::server::make_app(app_state);
         let file_id = Id::from_str("FzXiG9uZVyTPn4NRQ3HGV6B3eCK").unwrap();
-        let photo_id = Id::from_str("2xiq7PGBLimNVPWg7M3Q62uJ7JYU").unwrap();
-
-        state
-            .write(crate::app_state::event::Event::NewPhotoUpload {
-                photo_id,
-                file_id: file_id.clone(),
-                file_type: crate::lib::file::Type::Jpg,
-            })
-            .await;
 
         // We don't want to actually finish the requests since this
         // is testing the behaviour of multiple requests
@@ -438,19 +324,9 @@ mod tests {
     #[async_std::test]
     async fn test_run_failed_body() {
         let app_state = base_state().await;
-        let state = app_state.clone().into_request_state_current_time();
 
         let app = crate::server::make_app(app_state);
         let file_id = Id::from_str("FzXiG9uZVyTPn4NRQ3HGV6B3eCK").unwrap();
-        let photo_id = Id::from_str("2xiq7PGBLimNVPWg7M3Q62uJ7JYU").unwrap();
-
-        state
-            .write(crate::app_state::event::Event::NewPhotoUpload {
-                photo_id,
-                file_id: file_id.clone(),
-                file_type: crate::lib::file::Type::Jpg,
-            })
-            .await;
 
         struct FailingReader {}
         impl async_std::io::Read for FailingReader {

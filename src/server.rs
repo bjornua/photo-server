@@ -56,6 +56,6 @@ async fn make_admin_user_if_needed(state: AppState) -> AppState {
 pub fn make_app(state: AppState) -> tide::Server<AppState> {
     let mut app = tide::with_state(state);
     app.at("/command").post(routes::command::handle);
-    app.at("/file/:file_id").post(routes::upload::handle);
+    app.at("/upload").post(routes::upload::handle);
     app
 }

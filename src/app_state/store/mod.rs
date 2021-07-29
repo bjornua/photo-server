@@ -13,7 +13,7 @@ use crate::app_state::event::DateEvent;
 pub struct Store {
     pub users: users::Users,
     pub sessions: sessions::Sessions,
-    pub files: files::Files,
+    pub files: files::Uploads,
     pub photos: photos::Photos,
 }
 
@@ -61,26 +61,23 @@ impl Store {
             Event::UserUpdatePassword { user_id, password } => {
                 self.users.update_password(user_id, password).await.unwrap();
             }
-            Event::NewPhotoUpload {
-                file_id,
-                photo_id,
+            Event::UploadBegin {
                 file_type,
+                upload_id,
             } => {
-                self.photos.photo_new_upload(photo_id, file_id.clone());
-                self.files
-                    .upload_new(file_id, file_type, 5_000_000, command.date);
+                self.files.upload_start(upload_id, file_type, command.date);
             }
-            Event::FileUploadStart { file_id } => {
-                self.files.upload_start(file_id);
-            }
-            Event::FileReady {
-                file_id,
+            Event::UploadFinish {
+                upload_id,
                 size,
                 blob_id,
             } => {
-                self.files.upload_finish(file_id.clone(), blob_id, size);
-                self.photos.photo_upload_finish(file_id);
+                self.files.upload_finish(upload_id, blob_id, size);
             }
+            Event::PhotoAdd {
+                upload_id: _,
+                size: _,
+            } => todo!(),
         }
     }
 }

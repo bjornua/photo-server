@@ -31,16 +31,17 @@ pub enum Event {
         user_id: Id,
         password: String,
     },
-    PhotoUploadCreate {
+    UploadBegin {
+        upload_id: Id,
         file_type: file::Type,
-        photo_id: Id,
     },
-    PhotoUploadBegin {
-        photo_id: Id,
-    },
-    PhotoUploadFinish {
-        photo_id: Id,
+    UploadFinish {
+        upload_id: Id,
         blob_id: Id,
+        size: u64,
+    },
+    PhotoAdd {
+        upload_id: Id,
         size: u64,
     },
 }
